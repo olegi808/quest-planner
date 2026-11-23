@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Квест-планер</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --fb-bg:#f2f2f7;--fb-card:#ffffff;--fb-text:#111114;--fb-hint:#8e8e93;--fb-accent:#2f80ed;--fb-accent-text:#ffffff;
+}
+@media (prefers-color-scheme:dark){
+  :root{--fb-bg:#0e1621;--fb-card:#17212b;--fb-text:#f5f5f5;--fb-hint:#7f8b98;--fb-accent:#5ea2ef;--fb-accent-text:#ffffff}
+}
+:root{
+  --bg:var(--tg-theme-secondary-bg-color,var(--fb-bg));
+  --card:var(--tg-theme-section-bg-color,var(--tg-theme-bg-color,var(--fb-card)));
+  --text:var(--tg-theme-text-color,var(--fb-text));
+  --hint:var(--tg-theme-hint-color,var(--fb-hint));
+  --accent:var(--tg-theme-button-color,var(--fb-accent));
+  --accent-text:var(--tg-theme-button-text-color,var(--fb-accent-text));
+  --danger:var(--tg-theme-destructive-text-color,#e5484d);
+  --ok:#34c759;--xp:#8b5cf6;--gold:#f5b301;--hp:#ef4444;
+  --sep:color-mix(in srgb,var(--text) 9%,transparent);
+  --soft:color-mix(in srgb,var(--accent) 13%,transparent);
+  --field:color-mix(in srgb,var(--text) 6%,transparent);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom));overscroll-behavior-y:none}
+body.onboarding{padding-bottom:0}
+button{font:inherit;color:inherit;cursor:pointer}
+main{max-width:560px;margin:0 auto;padding:14px 16px 72px}
+.hidden{display:none!important}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+.sec{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--hint);font-weight:600;margin:20px 4px 8px}
+.sec button,.sec .r{border:0;background:none;color:var(--accent);text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;padding:0}
+.sec .r{color:var(--hint)}
+.meta{color:var(--hint);font-size:13px}
+.grow{flex:1;min-width:0}
+
+/* hero */
+.herocard{background:linear-gradient(135deg,color-mix(in srgb,var(--xp) 24%,var(--card)),var(--card) 70%)}
+.hrow{display:flex;gap:14px;align-items:center}
+.avatar{width:64px;height:64px;border-radius:20px;background:color-mix(in srgb,var(--xp) 20%,var(--card));display:flex;align-items:center;justify-content:center;font-size:36px;position:relative;flex:none;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--xp) 50%,transparent)}
+.avatar.big{width:88px;height:88px;font-size:50px;border-radius:26px}
+.avatar .lvl{position:absolute;right:-7px;bottom:-7px;background:var(--xp);color:#fff;font-size:12px;font-weight:800;min-width:26px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid var(--card)}
+.hn{font-weight:700;font-size:17px;display:flex;align-items:center;gap:6px}
+.hn button{border:0;background:none;color:var(--hint);padding:0 2px;font-size:14px}
+.htitle{font-size:13px;color:var(--xp);font-weight:600;margin-bottom:7px}
+.xpbar{height:9px;border-radius:5px;background:var(--field);overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--xp),#c084fc);border-radius:5px;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.xpt{display:flex;justify-content:space-between;font-size:11px;color:var(--hint);margin-top:4px}
+.hstats{display:flex;justify-content:space-between;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--sep);font-size:13px;color:var(--hint)}
+.hstats b{color:var(--text)}
+
+/* boss */
+.boss{background:linear-gradient(135deg,color-mix(in srgb,var(--hp) 17%,var(--card)),var(--card) 75%)}
+.bhead{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.bemoji{font-size:48px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;flex:none;animation:idle 3s ease-in-out infinite}
+.bemoji.dead{filter:grayscale(1);transform:rotate(80deg);opacity:.55;animation:none}
+.bemoji.hit{animation:hit .5s}
+.kicker{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--hp);text-transform:uppercase}
+.bname{font-weight:700;font-size:16px}
+.hpbar{position:relative;height:22px;border-radius:11px;background:var(--field);overflow:hidden}
+.hpbar i{display:block;height:100%;background:linear-gradient(90deg,#dc2626,#f87171);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.hpbar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700}
+.bnote{font-size:12px;color:var(--hint);margin-top:8px}
+@keyframes idle{50%{transform:translateY(-4px)}}
+@keyframes hit{0%,100%{transform:none}15%{transform:translateX(-8px) rotate(-10deg) scale(.9);filter:brightness(2.2) saturate(0)}35%{transform:translateX(7px) rotate(7deg)}55%{transform:translateX(-5px)}75%{transform:translateX(3px)}}
+
+/* quests */
+.list{background:var(--card);border-radius:16px;overflow:hidden;margin-bottom:12px}
+.quest{display:flex;gap:12px;align-items:center;padding:12px 14px;position:relative}
+.quest+.quest::before,.row+.row::before{content:"";position:absolute;top:0;left:50px;right:0;height:1px;background:var(--sep)}
+.qicon{width:36px;height:36px;border-radius:11px;background:var(--field);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+.qt{font-size:14px;font-weight:500}
+.qbar{height:5px;border-radius:3px;background:var(--field);overflow:hidden;margin:6px 0 4px}
+.qbar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .5s}
+.rw{font-size:12px;font-weight:600;color:var(--hint)}
+.rw .x{color:var(--xp)}.rw .g{color:var(--gold)}
+.claim{border:0;border-radius:11px;padding:8px 12px;font-weight:800;font-size:13px;background:linear-gradient(135deg,#fcd34d,#f59e0b);color:#3b2600;animation:pulse 1.4s infinite;flex:none}
+.qdone{color:var(--ok);font-weight:800;font-size:20px;flex:none;width:30px;text-align:center}
+.quest.claimed .qt,.quest.claimed .rw{opacity:.5}
+@keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--gold) 25%,transparent)}}
+
+/* rows */
+.row{display:flex;align-items:center;gap:12px;padding:11px 14px;position:relative}
+.tbody{flex:1;min-width:0;cursor:pointer}
+.ttl{word-break:break-word}
+.row.done .ttl{color:var(--hint);text-decoration:line-through}
+.over{color:var(--danger)}
+.chk{width:24px;height:24px;flex:none;border-radius:50%;border:2px solid color-mix(in srgb,var(--hint) 70%,transparent);background:none;padding:0;position:relative;transition:.15s}
+.chk.on{background:var(--accent);border-color:var(--accent)}
+.chk.on::after{content:"";position:absolute;left:7px;top:3px;width:6px;height:11px;border:solid var(--accent-text);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.xpb{font-size:11px;font-weight:700;color:var(--xp);background:color-mix(in srgb,var(--xp) 14%,transparent);padding:2px 7px;border-radius:7px;flex:none}
+.xpb.p1{color:#f59e0b;background:color-mix(in srgb,#f59e0b 15%,transparent)}
+.xpb.p2{color:var(--danger);background:color-mix(in srgb,var(--danger) 14%,transparent)}
+.empty{text-align:center;color:var(--hint);padding:26px 16px}
+.empty .big{font-size:40px;margin-bottom:6px}
+.quick{display:flex;gap:8px;padding:8px 8px 8px 14px;align-items:center}
+.quick input{flex:1;border:0;background:none;color:var(--text);font:inherit;outline:none;padding:6px 0;min-width:0}
+.quick input::placeholder{color:var(--hint)}
+.iconbtn{width:34px;height:34px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-text);font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
+
+/* habit pills */
+.pills{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.pill{display:flex;align-items:center;gap:10px;border:0;background:var(--card);border-radius:14px;padding:12px;text-align:left;transition:.15s;position:relative;overflow:hidden}
+.pill .em{font-size:22px}
+.pill .nm{font-size:14px;line-height:1.25;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pill .px{position:absolute;right:8px;top:6px;font-size:10px;font-weight:700;color:var(--xp)}
+.pill.on{background:color-mix(in srgb,var(--c) 18%,var(--card));box-shadow:inset 0 0 0 1.5px var(--c)}
+.pill.on .px{display:none}
+.pill.on::after{content:"✓";position:absolute;right:10px;top:7px;font-size:12px;color:var(--c);font-weight:800}
+
+/* segmented */
+.seg{display:flex;background:var(--field);border-radius:11px;padding:3px;margin-bottom:12px;gap:2px}
+.seg button{flex:1;border:0;background:none;padding:7px 4px;border-radius:9px;font-size:13px;font-weight:500;color:var(--hint)}
+.seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* habits */
+.habit{padding:12px 14px}
+.hhead{display:flex;align-items:center;gap:12px}
+.hemoji{width:44px;height:44px;border-radius:13px;background:color-mix(in srgb,var(--c) 18%,transparent);display:flex;align-items:center;justify-content:center;font-size:23px;flex:none}
+.hemoji.sm{width:36px;height:36px;font-size:19px;border-radius:11px}
+.hname{font-weight:600}
+.hcheck{width:42px;height:42px;border-radius:50%;border:2px solid var(--c);background:none;color:var(--c);font-size:18px;font-weight:700;flex:none;transition:.15s}
+.hcheck.on{background:var(--c);color:#fff}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
+.day{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;font-size:11px;color:var(--hint)}
+.day i{display:block;width:100%;max-width:34px;aspect-ratio:1;border-radius:9px;background:var(--field);transition:.15s}
+.day.on i{background:var(--c)}
+.day.off i{opacity:.35;background:repeating-linear-gradient(45deg,var(--field) 0 3px,transparent 3px 6px)}
+.day.off.on i{opacity:1;background:var(--c)}
+.day.today span{color:var(--text);font-weight:600}
+
+/* kpi & stats */
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.kpi{background:var(--card);border-radius:14px;padding:12px}
+.kpi b{display:block;font-size:22px;font-weight:700;line-height:1.1}
+.kpi span{font-size:12px;color:var(--hint)}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{fill:var(--hint);font-size:9px}
+.chart .val{fill:var(--text);font-weight:600}
+.ctitle{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.ctitle b{font-size:15px}
+.heat{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;grid-auto-columns:1fr;gap:3px}
+.heat i{aspect-ratio:1;border-radius:3px;background:var(--field)}
+.l0{background:color-mix(in srgb,var(--ok) 14%,var(--field))!important}
+.l1{background:color-mix(in srgb,var(--ok) 35%,transparent)!important}
+.l2{background:color-mix(in srgb,var(--ok) 58%,transparent)!important}
+.l3{background:color-mix(in srgb,var(--ok) 80%,transparent)!important}
+.l4{background:var(--ok)!important}
+.heat .fut{visibility:hidden}
+.legend{display:flex;align-items:center;justify-content:flex-end;gap:3px;margin-top:8px;font-size:11px;color:var(--hint)}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.hstat{display:flex;gap:12px;align-items:center;padding:10px 0}
+.hstat+.hstat{border-top:1px solid var(--sep)}
+.hs-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px}
+.hs-top b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:6px;border-radius:3px;background:var(--field);overflow:hidden;margin-bottom:4px}
+.bar i{display:block;height:100%;border-radius:3px}
+
+/* trophies & shop */
+.trophies{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.trophy{background:var(--card);border-radius:14px;padding:12px 6px 10px;text-align:center}
+.trophy .ti{font-size:30px;line-height:1.2}
+.trophy b{display:block;font-size:12px;margin-top:4px;line-height:1.2}
+.trophy span{font-size:10.5px;color:var(--hint);line-height:1.25;display:block;margin-top:3px}
+.trophy.locked .ti{filter:grayscale(1);opacity:.25}
+.trophy.locked b{color:var(--hint)}
+.buy{border:0;border-radius:10px;padding:7px 11px;font-weight:700;font-size:13px;background:color-mix(in srgb,var(--gold) 22%,transparent);flex:none;white-space:nowrap}
+.buy.no{opacity:.45}
+.slain{display:flex;flex-wrap:wrap;gap:6px;font-size:26px}
+.tip{background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 18%,var(--card)),var(--card));position:relative}
+.tip ul{margin:8px 0 0;padding-left:18px;font-size:14px}
+.tip li{margin:3px 0}
+.tip .x{position:absolute;right:10px;top:10px;border:0;background:var(--field);width:26px;height:26px;border-radius:50%;color:var(--hint)}
+
+/* tabbar & fab */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--sep);padding:6px 2px calc(6px + env(safe-area-inset-bottom));z-index:10}
+.tab{flex:1;border:0;background:none;color:var(--hint);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:500;padding:4px 0}
+.tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--accent)}
+.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(78px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-text);font-size:30px;line-height:1;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%,transparent);z-index:9;display:flex;align-items:center;justify-content:center}
+
+/* sheet */
+.sheet-wrap{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;transition:opacity .25s}
+.sheet{position:relative;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.sheet-wrap.open .backdrop{opacity:1}
+.sheet-wrap.open .sheet{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--sep);margin:0 auto 10px}
+.shead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.shead h2{margin:0;font-size:19px}
+.close{border:0;background:var(--field);width:30px;height:30px;border-radius:50%;color:var(--hint);font-size:18px;line-height:1}
+.field{background:var(--card);border-radius:13px;margin-bottom:10px;overflow:hidden}
+.field input,.field textarea{width:100%;border:0;background:none;color:var(--text);font:inherit;padding:13px 14px;outline:none;resize:none}
+.field input::placeholder,.field textarea::placeholder{color:var(--hint)}
+.field textarea{border-top:1px solid var(--sep);min-height:64px}
+.lbl{font-size:13px;color:var(--hint);margin:14px 4px 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{border:0;background:var(--card);border-radius:10px;padding:8px 12px;font-size:14px}
+.chip.on{background:var(--accent);color:var(--accent-text)}
+.chips input[type=date]{border:0;background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px;color-scheme:light dark}
+.emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.emojis button{border:0;background:var(--card);border-radius:10px;aspect-ratio:1;font-size:20px;padding:0}
+.emojis button.on{box-shadow:inset 0 0 0 2px var(--accent);background:var(--soft)}
+.avatars{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.avatars button{aspect-ratio:1;border:0;border-radius:14px;background:var(--card);font-size:28px;padding:0}
+.avatars button.on{box-shadow:inset 0 0 0 2px var(--xp);background:color-mix(in srgb,var(--xp) 18%,var(--card))}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.colors button{width:32px;height:32px;border-radius:50%;border:0;padding:0;background:var(--c)}
+.colors button.on{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
+.days7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.days7 button{border:0;background:var(--card);border-radius:10px;padding:9px 0;font-size:13px;font-weight:500}
+.days7 button.on{background:var(--accent);color:var(--accent-text)}
+.btn{display:block;width:100%;border:0;border-radius:13px;padding:14px;font-weight:600;font-size:16px;margin-top:18px;background:var(--accent);color:var(--accent-text)}
+.btn.ghost{background:none;color:var(--danger);margin-top:6px;font-weight:500}
+.btn.alt{background:none;color:var(--accent);margin-top:6px;font-weight:500}
+.btn.epic{background:linear-gradient(135deg,var(--xp),#c084fc);color:#fff}
+
+/* onboarding */
+.onb{text-align:center;padding-top:16px}
+.onb h1{font-size:24px;margin:8px 0 6px}
+.onb p{margin:0 auto 6px;max-width:400px}
+.onb form{text-align:left;margin-top:12px}
+.onb-hero{font-size:68px;animation:idle 3s ease-in-out infinite}
+.feat{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:16px 0 4px;text-align:left}
+.feat div{background:var(--card);border-radius:14px;padding:10px 12px;font-size:13px}
+.feat b{display:block;font-size:20px}
+
+/* fx */
+.float{position:fixed;transform:translate(-50%,-50%);font-weight:800;font-size:17px;pointer-events:none;z-index:80;white-space:nowrap;color:var(--xp);text-shadow:0 1px 0 var(--card),0 0 8px var(--card);animation:floatup 1.2s ease-out forwards}
+.float.neg{color:var(--hint)}
+.float.dmg{color:var(--hp);font-size:22px}
+@keyframes floatup{0%{opacity:0;margin-top:6px}15%{opacity:1}100%{opacity:0;margin-top:-56px}}
+.toasts{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:8px;width:min(92vw,420px);pointer-events:none}
+.toast{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:16px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.28);border:1px solid var(--sep);animation:tin .4s cubic-bezier(.2,1.3,.4,1),tout .35s 3s forwards}
+.toast .ti{font-size:30px}
+.toast b{display:block;font-size:14px}
+.toast span{font-size:12.5px;color:var(--hint)}
+@keyframes tin{from{opacity:0;transform:translateY(-20px) scale(.95)}}
+@keyframes tout{to{opacity:0;transform:translateY(-12px)}}
+.modal-wrap{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:24px;animation:fade .25s}
+.modal{background:var(--card);border-radius:26px;padding:26px 22px 20px;text-align:center;width:100%;max-width:340px;animation:zoom .45s cubic-bezier(.2,1.4,.4,1)}
+.modal .big{font-size:76px;line-height:1.1;display:inline-block;animation:bounce 1.2s ease-in-out infinite}
+.modal .kick{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--xp);margin-top:8px}
+.modal h2{margin:4px 0 6px;font-size:28px}
+.modal .rewards{display:flex;justify-content:center;gap:10px;margin:12px 0 0}
+.modal .rewards span{background:var(--field);border-radius:12px;padding:8px 12px;font-weight:700}
+@keyframes fade{from{opacity:0}}
+@keyframes zoom{from{transform:scale(.6);opacity:0}}
+@keyframes bounce{50%{transform:translateY(-8px) scale(1.05)}}
+.conf{position:fixed;top:-16px;width:9px;height:15px;z-index:95;pointer-events:none;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.2)}100%{transform:scale(1)}}
+.pop{animation:pop .3s}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<button class="fab hidden" id="fab" data-act="fab" aria-label="Добавить">+</button>
+<nav class="tabbar" id="tabbar"></nav>
+<div class="toasts" id="toasts"></div>
+
+<script>
+(() => {
+'use strict';
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTG = !!(tg && tg.initData);
+const ver = v => { try { return inTG && tg.isVersionAtLeast(v); } catch { return false; } };
+const safe = fn => { try { fn(); } catch {} };
+
+/* ================= utils ================= */
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return ymd(d); };
+const today = () => ymd(new Date());
+const wd = s => (parse(s).getDay() + 6) % 7; // Пн = 0
+const weekStart = s => addDays(s, -wd(s));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const plural = (n, a, b, c) => { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? a : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? b : c; };
+const fmtDate = s => {
+  const t = today();
+  if (s === t) return 'Сегодня';
+  if (s === addDays(t, 1)) return 'Завтра';
+  if (s === addDays(t, -1)) return 'Вчера';
+  const d = parse(s);
+  return `${WD[wd(s)]}, ${d.getDate()} ${MONTHS[d.getMonth()]}` + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
+};
+const hash = s => { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const haptic = {
+  tap: () => safe(() => ver('6.1') && tg.HapticFeedback.impactOccurred('light')),
+  heavy: () => safe(() => ver('6.1') && tg.HapticFeedback.impactOccurred('heavy')),
+  ok: () => safe(() => ver('6.1') && tg.HapticFeedback.notificationOccurred('success')),
+  err: () => safe(() => ver('6.1') && tg.HapticFeedback.notificationOccurred('error')),
+  sel: () => safe(() => ver('6.1') && tg.HapticFeedback.selectionChanged()),
+};
+const ask = msg => new Promise(res => {
+  if (ver('6.2')) tg.showConfirm(msg, ok => res(!!ok)); else res(window.confirm(msg));
+});
+
+/* ================= game content ================= */
+const EMOJIS = ['💧','🏃','📚','🧘','💪','🥗','😴','🚭','💊','✍️','🎯','🧹','🎸','🌱','☀️','🦷','🚶','🍎','🧠','💰','📵','🙏','🎨','❤️'];
+const COLORS = ['#2f80ed','#34c759','#ff9500','#ff3b30','#af52de','#32ade6','#ffcc00','#ff2d55'];
+const AVATARS = ['🧙','🧝','🦸','🧛','🧚','🤴','👸','🦊','🐺','🦁','🐱','🐲'];
+const REWARD_EMOJIS = ['☕','🍰','🎮','🎬','🍕','😴','🛍️','📱','🍿','🎧','🛁','🍣','🎲','📖','🏖️','🎁'];
+const DEFAULT_REWARDS = [['☕', 'Кофе с десертом', 30], ['🎬', 'Серия любимого сериала', 40], ['🎮', 'Час игр без чувства вины', 60], ['😴', 'Поспать подольше', 80], ['🍕', 'Заказать пиццу', 150], ['🛍️', 'Купить себе что-то приятное', 400]];
+
+const BOSSES = [
+  { e: '🐉', n: 'Дракон Прокрастинации', d: 'Шепчет: «сделаешь завтра»' },
+  { e: '👺', n: 'Гоблин Лени', d: 'Тянет обратно под одеяло' },
+  { e: '👻', n: 'Призрак Сомнений', d: 'Твердит, что не получится' },
+  { e: '🦑', n: 'Кракен Соцсетей', d: 'Опутывает щупальцами ленты' },
+  { e: '🗿', n: 'Голем Рутины', d: 'Превращает дни в серый камень' },
+  { e: '👹', n: 'Демон Хаоса', d: 'Разбрасывает дела по углам' },
+  { e: '💀', n: 'Лич Выгорания', d: 'Высасывает силы и мотивацию' },
+  { e: '🐍', n: 'Гидра Дедлайнов', d: 'На месте одной задачи — две' },
+];
+const TITLES = [[1, 'Новобранец'], [3, 'Странник'], [5, 'Следопыт'], [8, 'Рыцарь'], [12, 'Ветеран'], [16, 'Мастер'], [20, 'Чемпион'], [25, 'Легенда'], [30, 'Мифический герой']];
+const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
+const levelCost = L => 80 + L * 40;
+function levelInfo(xp) {
+  let L = 1, acc = 0;
+  while (xp >= acc + levelCost(L)) { acc += levelCost(L); L++; }
+  return { level: L, cur: xp - acc, need: levelCost(L), title: titleFor(L) };
+}
+const taskReward = t => ({ xp: [10, 15, 25][t.prio || 0], gold: [3, 5, 8][t.prio || 0] });
+const habitBonus = streakBefore => 6 + Math.min(streakBefore, 14);
+
+// Квесты дня: c = контекст дня
+const QUESTS = {
+  tasks3: { i: '⚔️', t: 'Выполни 3 задачи', target: () => 3, prog: c => c.doneT.length, xp: 30, gold: 12 },
+  tasks5: { i: '🗡️', t: 'Выполни 5 задач', target: () => 5, prog: c => c.doneT.length, xp: 50, gold: 20, need: c => c.open.length >= 4 },
+  hall: { i: '🌿', t: 'Отметь все привычки дня', target: c => c.hT.length, prog: c => c.hDone, xp: 40, gold: 15, need: c => c.hT.length >= 2 },
+  h2: { i: '🔮', t: 'Отметь 2 привычки', target: () => 2, prog: c => c.hDone, xp: 20, gold: 8, need: c => c.hT.length >= 2 },
+  high: { i: '🔴', t: 'Закрой важную задачу', target: () => 1, prog: c => c.doneT.filter(t => t.prio === 2).length, xp: 35, gold: 15, need: c => c.open.some(t => t.prio === 2) },
+  over: { i: '🕸️', t: 'Разгреби просроченное', target: () => 1, prog: c => c.doneT.filter(t => t.due && t.due < c.T).length, xp: 35, gold: 15, need: c => c.open.some(t => t.due && t.due < c.T) },
+  early: { i: '🌅', t: 'Ранняя пташка: задача до 12:00', target: () => 1, prog: c => c.doneT.filter(t => t.doneTs && new Date(t.doneTs).getHours() < 12).length, xp: 25, gold: 10, need: () => new Date().getHours() < 10 },
+  plan: { i: '🗺️', t: 'Спланируй завтра: 3 задачи', target: () => 3, prog: c => S.tasks.filter(t => t.due === addDays(c.T, 1)).length, xp: 20, gold: 8 },
+  combo: { i: '✨', t: 'Сделай 4 дела за день', target: () => 4, prog: c => c.doneT.length + c.hDone, xp: 30, gold: 12 },
+  keep: { i: '🔥', t: 'Сохрани серию привычки', target: () => 1, prog: c => c.hT.some(h => isDone(h, c.T) && streak(h) >= 2) ? 1 : 0, xp: 25, gold: 10, need: c => c.hT.some(h => streak(h) >= 1) },
+};
+
+// Трофеи: s = сводка статистики
+const ACH = [
+  { id: 'first', i: '⚔️', n: 'Первая кровь', d: 'Выполни первую задачу', g: 10, ok: s => s.tasksDone >= 1 },
+  { id: 't25', i: '📜', n: 'Писарь', d: '25 задач', g: 25, ok: s => s.tasksDone >= 25 },
+  { id: 't100', i: '🏅', n: 'Сотня', d: '100 задач', g: 60, ok: s => s.tasksDone >= 100 },
+  { id: 't300', i: '👑', n: 'Повелитель дел', d: '300 задач', g: 150, ok: s => s.tasksDone >= 300 },
+  { id: 'r3', i: '🌱', n: 'Садовник', d: '3 привычки в работе', g: 15, ok: s => s.habits >= 3 },
+  { id: 's3', i: '🕯️', n: 'Искра', d: 'Серия 3 дня', g: 10, ok: s => s.best >= 3 },
+  { id: 's7', i: '🔥', n: 'Пламя', d: 'Серия 7 дней', g: 30, ok: s => s.best >= 7 },
+  { id: 's21', i: '☄️', n: 'Привычка выкована', d: 'Серия 21 день', g: 80, ok: s => s.best >= 21 },
+  { id: 's50', i: '🌋', n: 'Несгибаемый', d: 'Серия 50 дней', g: 200, ok: s => s.best >= 50 },
+  { id: 'c50', i: '🍃', n: 'Друид', d: '50 отметок привычек', g: 30, ok: s => s.checks >= 50 },
+  { id: 'p1', i: '✨', n: 'Идеальный день', d: 'Все привычки дня', g: 15, ok: s => s.perfect >= 1 },
+  { id: 'p10', i: '🌟', n: 'Сияние', d: '10 идеальных дней', g: 60, ok: s => s.perfect >= 10 },
+  { id: 'q10', i: '🎯', n: 'Искатель', d: '10 квестов дня', g: 30, ok: s => s.quests >= 10 },
+  { id: 'q50', i: '🗺️', n: 'Странствующий рыцарь', d: '50 квестов дня', g: 100, ok: s => s.quests >= 50 },
+  { id: 'b1', i: '🐉', n: 'Драконоборец', d: 'Победи босса недели', g: 50, ok: s => s.bosses >= 1 },
+  { id: 'b5', i: '🛡️', n: 'Охотник на чудовищ', d: 'Победи 5 боссов', g: 150, ok: s => s.bosses >= 5 },
+  { id: 'l5', i: '⭐', n: 'Подмастерье', d: 'Достигни 5 уровня', g: 30, ok: s => s.level >= 5 },
+  { id: 'l10', i: '💫', n: 'Герой', d: 'Достигни 10 уровня', g: 80, ok: s => s.level >= 10 },
+  { id: 'l20', i: '🌠', n: 'Полубог', d: 'Достигни 20 уровня', g: 200, ok: s => s.level >= 20 },
+  { id: 'buy1', i: '🛍️', n: 'Заслуженный отдых', d: 'Купи награду в лавке', g: 10, ok: s => s.purchases >= 1 },
+  { id: 'rich', i: '🏦', n: 'Казначей', d: 'Накопи 500 золота', g: 50, ok: s => s.gold >= 500 },
+];
+
+/* ================= state & storage ================= */
+const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false });
+let S = blank();
+const ui = { tab: 'camp', taskFilter: 'today', statRange: 7 };
+const LS_KEY = 'tg-planner-v1';
+const CHUNK = 4000;
+const cs = ver('6.9') ? tg.CloudStorage : null;
+let cloudN = 0, saveTimer = null;
+
+const csCall = (method, ...args) => new Promise(res => {
+  let done = false;
+  const t = setTimeout(() => { if (!done) { done = true; res(null); } }, 5000);
+  try {
+    cs[method](...args, (err, val) => {
+      if (done) return; done = true; clearTimeout(t);
+      res(err ? null : (val === undefined ? true : val));
+    });
+  } catch { done = true; clearTimeout(t); res(null); }
+});
+async function cloudLoad() {
+  if (!cs) return null;
+  const meta = await csCall('getItem', 'meta');
+  if (!meta) return null;
+  let m; try { m = JSON.parse(meta); } catch { return null; }
+  cloudN = m.n || 0;
+  const keys = Array.from({ length: cloudN }, (_, i) => 'c' + i);
+  const vals = await csCall('getItems', keys);
+  if (!vals) return null;
+  try { return JSON.parse(keys.map(k => vals[k] || '').join('')); } catch { return null; }
+}
+async function cloudSave() {
+  if (!cs) return;
+  const json = JSON.stringify(S);
+  const n = Math.max(1, Math.ceil(json.length / CHUNK));
+  for (let i = 0; i < n; i++) await csCall('setItem', 'c' + i, json.slice(i * CHUNK, (i + 1) * CHUNK));
+  await csCall('setItem', 'meta', JSON.stringify({ n, updated: S.updated }));
+  if (cloudN > n) await csCall('removeItems', Array.from({ length: cloudN - n }, (_, i) => 'c' + (n + i)));
+  cloudN = n;
+}
+async function load() {
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem(LS_KEY)); } catch {}
+  const cloud = await cloudLoad();
+  const pick = [local, cloud].filter(x => x && x.v).sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
+  if (pick) {
+    const b = blank();
+    S = Object.assign(b, pick);
+    S.bank = Object.assign(blank().bank, S.bank || {});
+    S.v = 2;
+  }
+}
+function save() {
+  S.updated = Date.now();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch {}
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(cloudSave, 700);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && saveTimer) { clearTimeout(saveTimer); saveTimer = null; cloudSave(); }
+});
+
+/* ================= domain ================= */
+const activeHabits = () => S.habits.filter(h => !h.archived);
+const scheduled = (h, s) => h.days.includes(wd(s));
+const isDone = (h, s) => !!h.log[s];
+
+function streak(h) {
+  const T = today();
+  let s = T, n = 0;
+  for (let i = 0; i < 1000 && s >= h.created; i++, s = addDays(s, -1)) {
+    if (!scheduled(h, s)) continue;
+    if (isDone(h, s)) n++;
+    else if (s !== T) break;
+  }
+  return n;
+}
+// Проход по истории привычки: опыт (с бонусом за серию), лучшая серия
+function habitHistory(h) {
+  const T = today();
+  const r = { xp: 0, gold: 0, n: 0, best: 0, days: [] };
+  const logDays = Object.keys(h.log).sort();
+  let s = logDays.length && logDays[0] < h.created ? logDays[0] : h.created;
+  let cur = 0;
+  for (let i = 0; s <= T && i < 3000; s = addDays(s, 1), i++) {
+    const sch = scheduled(h, s), dn = isDone(h, s);
+    if (dn) {
+      const x = habitBonus(sch ? cur : 0);
+      if (sch) { cur++; r.best = Math.max(r.best, cur); }
+      r.xp += x; r.gold += 2; r.n++; r.days.push([s, x]);
+    } else if (sch && s !== T) cur = 0;
+  }
+  return r;
+}
+function habitRate(h, from, to) {
+  let tot = 0, ok = 0;
+  for (let s = from > h.created ? from : h.created; s <= to; s = addDays(s, 1)) {
+    if (!scheduled(h, s)) continue;
+    tot++; if (isDone(h, s)) ok++;
+  }
+  return tot ? ok / tot : null;
+}
+function dayHabitRatio(s) {
+  const hs = activeHabits().filter(h => h.created <= s && scheduled(h, s));
+  if (!hs.length) return null;
+  return hs.filter(h => isDone(h, s)).length / hs.length;
+}
+const tasksDoneOn = s => S.tasks.filter(t => t.done && t.doneAt === s).length;
+const daysLabel = d => {
+  const k = [...d].sort().join('');
+  if (k === '0123456') return 'Каждый день';
+  if (k === '01234') return 'По будням';
+  if (k === '56') return 'По выходным';
+  return [...d].sort().map(i => WD[i]).join(', ');
+};
+const byPrio = (a, b) => (b.prio || 0) - (a.prio || 0) || (a.created || 0) - (b.created || 0);
+const sumDays = (map, from, n) => { let x = 0; for (let i = 0; i < n; i++) x += map[addDays(from, i)] || 0; return x; };
+
+/* ---------- всё игровое состояние выводится из данных ---------- */
+function computeAll() {
+  const dayXp = Object.assign({}, S.bank.days);
+  const add = (d, x) => { dayXp[d] = (dayXp[d] || 0) + x; };
+  let xp = S.bank.xp, gold = S.bank.gold, tasksDone = S.bank.tasks, checks = S.bank.checks, best = 0;
+  for (const t of S.tasks) if (t.done) {
+    const r = taskReward(t); xp += r.xp; gold += r.gold; tasksDone++;
+    if (t.doneAt) add(t.doneAt, r.xp);
+  }
+  for (const h of S.habits) {
+    const r = habitHistory(h);
+    xp += r.xp; gold += r.gold; checks += r.n;
+    r.days.forEach(([d, x]) => add(d, x));
+    if (!h.archived) best = Math.max(best, r.best);
+  }
+  const claims = Object.values(S.claims);
+  claims.forEach(c => { xp += c.xp; gold += c.gold; });
+  let bosses = 0;
+  Object.values(S.bosses).forEach(b => { if (b.claimed) { bosses++; xp += b.reward.xp; gold += b.reward.gold; } });
+  Object.values(S.ach).forEach(a => { gold += a.g || 0; });
+  const spent = S.purchases.reduce((a, p) => a + p.cost, 0);
+  gold -= spent;
+  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, ...levelInfo(xp) };
+}
+function bossState(all) {
+  const T = today(), wk = weekStart(T);
+  let b = S.bosses[wk];
+  if (!b) {
+    const prev = [1, 2].map(k => sumDays(all.dayXp, addDays(wk, -7 * k), 7));
+    const avg = (prev[0] + prev[1]) / 2;
+    const idx = Math.round(parse(wk).getTime() / (7 * 864e5)) % BOSSES.length;
+    b = S.bosses[wk] = { hp: Math.max(150, Math.round(avg * 1.1 / 10) * 10), idx, claimed: false };
+  }
+  const dmg = sumDays(all.dayXp, wk, 7);
+  return { ...b, wk, dmg, left: Math.max(0, b.hp - dmg), def: BOSSES[b.idx], dead: dmg >= b.hp, daysLeft: 6 - wd(T) };
+}
+function dayCtx(T) {
+  const hT = activeHabits().filter(h => scheduled(h, T));
+  const doneT = S.tasks.filter(t => t.done && t.doneAt === T);
+  return { T, hT, hDone: hT.filter(h => isDone(h, T)).length, doneT, open: S.tasks.filter(t => !t.done) };
+}
+function dailyQuests(T) {
+  const c = dayCtx(T);
+  if (!S.quests[T]) {
+    const r = rng(hash(T + (S.hero ? S.hero.name : '')));
+    const ids = Object.keys(QUESTS).filter(id => !QUESTS[id].need || QUESTS[id].need(c));
+    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    S.quests = { [T]: ids.slice(0, 3) }; // старые дни не нужны
+  }
+  return S.quests[T].map(id => {
+    const q = QUESTS[id];
+    const target = Math.max(1, q.target(c));
+    const prog = Math.min(target, q.prog(c));
+    return { id, ...q, target, prog, ready: prog >= target, claimed: !!S.claims[T + ':' + id] };
+  });
+}
+function perfectDays() {
+  const T = today(); let n = 0;
+  for (let i = 0; i < 365; i++) { if (dayHabitRatio(addDays(T, -i)) === 1) n++; }
+  return n;
+}
+function game() {
+  const all = computeAll();
+  const boss = bossState(all);
+  return { all, boss };
+}
+const snap = () => { const g = game(); return { xp: g.all.xp, gold: g.all.gold, level: g.all.level, title: g.all.title, dmg: g.boss.dmg, dead: g.boss.dead }; };
+function checkAch() {
+  const a = computeAll();
+  const st = { ...a, habits: activeHabits().length, perfect: perfectDays() };
+  const got = [];
+  for (const x of ACH) if (!S.ach[x.id] && x.ok(st)) { S.ach[x.id] = { d: today(), g: x.g }; got.push(x); }
+  return got;
+}
+// Боссы прошлых недель, которых добили, но сундук не открыли, — открываем автоматически
+function settleOldBosses() {
+  const a = computeAll(), cur = weekStart(today());
+  for (const [wk, b] of Object.entries(S.bosses)) {
+    if (wk < cur && !b.claimed && sumDays(a.dayXp, wk, 7) >= b.hp) { b.claimed = true; b.reward = { xp: 120, gold: 60 }; }
+  }
+}
+
+/* ================= fx ================= */
+function floatText(x, y, html, cls = '') {
+  const d = document.createElement('div');
+  d.className = 'float ' + cls; d.innerHTML = html;
+  d.style.left = Math.min(Math.max(x, 80), innerWidth - 80) + 'px'; d.style.top = y + 'px';
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1300);
+}
+function toast(icon, title, sub) {
+  const box = document.getElementById('toasts');
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.innerHTML = `<div class="ti">${icon}</div><div><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+  box.appendChild(d);
+  setTimeout(() => d.remove(), 3500);
+}
+function confetti(n = 70) {
+  const cols = ['#8b5cf6', '#f5b301', '#34c759', '#ef4444', '#32ade6', '#ff2d55', '#ffcc00'];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('i');
+    c.className = 'conf';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = cols[i % cols.length];
+    c.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px');
+    c.style.setProperty('--r', (Math.random() * 1080 - 540) + 'deg');
+    c.style.animationDuration = 1.6 + Math.random() * 1.6 + 's';
+    c.style.animationDelay = Math.random() * .3 + 's';
+    if (Math.random() < .4) { c.style.width = '10px'; c.style.height = '10px'; c.style.borderRadius = '50%'; }
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3600);
+  }
+}
+function modal(html) {
+  const w = document.createElement('div');
+  w.className = 'modal-wrap';
+  w.innerHTML = `<div class="modal">${html}<button class="btn epic" data-act="closeModal">Вперёд!</button></div>`;
+  document.body.appendChild(w);
+}
+function levelUpModal(L, newTitle) {
+  haptic.heavy(); setTimeout(haptic.ok, 150);
+  confetti(110);
+  modal(`<div class="big">${S.hero.avatar}</div><div class="kick">НОВЫЙ УРОВЕНЬ</div><h2>Уровень ${L}</h2>
+    <div class="meta">${newTitle ? `Новый титул: <b style="color:var(--xp)">${newTitle}</b>` : 'Ты становишься сильнее. Так держать!'}</div>`);
+}
+function fx(b, m, ev, newAch) {
+  const x = ev && ev.clientX ? ev.clientX : innerWidth / 2;
+  const y = ev && ev.clientY ? ev.clientY : innerHeight / 2;
+  const dx = m.xp - b.xp, dg = m.gold - b.gold;
+  if (dx || dg) {
+    const parts = [];
+    if (dx) parts.push(`${dx > 0 ? '+' : '−'}${Math.abs(dx)} XP`);
+    if (dg) parts.push(`<span style="color:var(--gold)">${dg > 0 ? '+' : '−'}${Math.abs(dg)} 💰</span>`);
+    floatText(x, y - 14, parts.join(' '), dx < 0 || (!dx && dg < 0) ? 'neg' : '');
+  }
+  if (m.dmg > b.dmg) {
+    const be = app.querySelector('.bemoji');
+    if (be) {
+      be.classList.remove('hit'); void be.offsetWidth; be.classList.add('hit');
+      const r = be.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < innerHeight) floatText(r.left + r.width / 2, r.top + 10, '−' + (m.dmg - b.dmg), 'dmg');
+    }
+  }
+  if (!b.dead && m.dead) setTimeout(() => { haptic.heavy(); confetti(90); toast('🏆', 'Босс повержен!', 'Открой сундук в Лагере'); }, 450);
+  if (m.level > b.level) setTimeout(() => levelUpModal(m.level, m.title !== b.title ? m.title : null), 600);
+  (newAch || []).forEach((a, i) => setTimeout(() => { haptic.ok(); toast(a.i, 'Трофей: ' + a.n, `${a.d} · +${a.g} 💰`); }, 900 + i * 700));
+}
+// Любое изменение данных: снимок до → изменение → снимок после → эффекты
+function change(ev, mutate) {
+  const before = snap();
+  mutate();
+  const mid = snap();
+  const newAch = checkAch();
+  save(); render();
+  fx(before, mid, ev, newAch);
+}
+
+/* ================= view helpers ================= */
+function taskRow(t) {
+  const T = today();
+  const over = !t.done && t.due && t.due < T;
+  const meta = [];
+  if (t.done && t.doneAt) meta.push('✓ ' + fmtDate(t.doneAt).toLowerCase());
+  else if (t.due && ui.tab === 'tasks' && ui.taskFilter !== 'upcoming') meta.push(`<span class="${over ? 'over' : ''}">${fmtDate(t.due)}</span>`);
+  else if (over) meta.push(`<span class="over">${fmtDate(t.due)}</span>`);
+  if (t.note) meta.push(esc(t.note.split('\n')[0]).slice(0, 60));
+  return `<div class="row ${t.done ? 'done' : ''}">
+    <button type="button" class="chk ${t.done ? 'on' : ''}" data-act="toggleTask" data-id="${t.id}" aria-label="Готово"></button>
+    <div class="tbody" data-act="editTask" data-id="${t.id}">
+      <div class="ttl">${esc(t.title)}</div>
+      ${meta.length ? `<div class="meta">${meta.join(' · ')}</div>` : ''}
+    </div>
+    ${!t.done ? `<span class="xpb ${t.prio ? 'p' + t.prio : ''}">+${taskReward(t).xp}</span>` : ''}
+  </div>`;
+}
+function heroCard(g, opts = {}) {
+  const a = g.all, T = today();
+  const c = dayCtx(T);
+  const openToday = S.tasks.filter(t => !t.done && t.due && t.due <= T).length;
+  const tot = c.doneT.length + openToday + c.hT.length, dn = c.doneT.length + c.hDone;
+  const curBest = Math.max(0, ...activeHabits().map(streak));
+  return `<div class="card herocard">
+    <div class="hrow">
+      <div class="avatar ${opts.big ? 'big' : ''}">${S.hero.avatar}<span class="lvl">${a.level}</span></div>
+      <div class="grow">
+        <div class="hn">${esc(S.hero.name)}${opts.big ? '<button type="button" data-act="editHero" aria-label="Изменить">✏️</button>' : ''}</div>
+        <div class="htitle">${a.title} · ур. ${a.level}</div>
+        <div class="xpbar"><i style="width:${(a.cur / a.need * 100).toFixed(1)}%"></i></div>
+        <div class="xpt"><span>${a.cur} / ${a.need} XP</span><span>до ур. ${a.level + 1}: ${a.need - a.cur}</span></div>
+      </div>
+    </div>
+    <div class="hstats">
+      <span>💰 <b>${a.gold}</b></span>
+      <span>🔥 <b>${curBest}</b></span>
+      <span>🏆 <b>${Object.keys(S.ach).length}</b>/${ACH.length}</span>
+      <span>📅 <b>${dn}/${tot}</b> сегодня</span>
+    </div>
+  </div>`;
+}
+function bossCard(b) {
+  const pct = Math.max(0, b.left / b.hp * 100);
+  if (b.dead) {
+    return `<div class="card boss">
+      <div class="bhead"><div class="bemoji dead">${b.def.e}</div><div class="grow">
+        <div class="kicker" style="color:var(--ok)">Повержен!</div><div class="bname">${b.def.n}</div>
+        <div class="meta">${b.claimed ? 'Сундук открыт. Новый босс придёт в понедельник' : 'Ты одолел босса недели. Забирай добычу!'}</div></div></div>
+      ${b.claimed ? '' : `<button type="button" class="btn epic" style="margin-top:4px" data-act="claimBoss">🎁 Открыть сундук · +120 XP · +60 💰</button>`}
+    </div>`;
+  }
+  return `<div class="card boss">
+    <div class="bhead"><div class="bemoji">${b.def.e}</div><div class="grow">
+      <div class="kicker">Босс недели · ${b.daysLeft ? `ещё ${b.daysLeft} ${plural(b.daysLeft, 'день', 'дня', 'дней')}` : 'последний день!'}</div>
+      <div class="bname">${b.def.n}</div><div class="meta">${b.def.d}</div></div></div>
+    <div class="hpbar"><i style="width:${pct.toFixed(1)}%"></i><span>❤️ ${b.left} / ${b.hp} HP</span></div>
+    <div class="bnote">Каждое выполненное дело бьёт босса на столько, сколько опыта ты получаешь</div>
+  </div>`;
+}
+function questList(qs) {
+  const T = today();
+  return `<div class="list">${qs.map(q => `<div class="quest ${q.claimed ? 'claimed' : ''}">
+    <div class="qicon">${q.i}</div>
+    <div class="grow"><div class="qt">${q.t}</div>
+      <div class="qbar"><i style="width:${(q.prog / q.target * 100).toFixed(0)}%;${q.ready ? 'background:var(--ok)' : ''}"></i></div>
+      <div class="rw">${q.prog}/${q.target} · <span class="x">+${q.xp} XP</span> <span class="g">+${q.gold} 💰</span></div></div>
+    ${q.claimed ? '<div class="qdone">✓</div>' : q.ready ? `<button type="button" class="claim" data-act="claimQuest" data-id="${q.id}" data-day="${T}">Забрать</button>` : ''}
+  </div>`).join('')}</div>`;
+}
+function bars(values, labels, color, opts = {}) {
+  const W = 320, H = 130, top = 14, bottom = 18;
+  const n = values.length;
+  const gap = n > 60 ? 1 : n > 20 ? 2 : 6;
+  const bw = (W - gap * (n - 1)) / n;
+  const max = opts.max || Math.max(1, ...values);
+  const every = n <= 7 ? 1 : n <= 31 ? 5 : 15;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="chart">`;
+  values.forEach((v, i) => {
+    const x = i * (bw + gap);
+    const h = Math.max(v > 0 ? 3 : 2, (v / max) * (H - top - bottom));
+    const y = H - bottom - h;
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(4, bw / 2).toFixed(1)}" fill="${color}" opacity="${v > 0 ? 1 : .2}"/>`;
+    if (n <= 7 && v > 0) s += `<text class="val" x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle">${v}</text>`;
+    if ((n - 1 - i) % every === 0) s += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${labels[i]}</text>`;
+  });
+  return s + '</svg>';
+}
+
+/* ================= views ================= */
+function viewOnboarding() {
+  const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  return `<div class="onb">
+    <div class="onb-hero">⚔️</div>
+    <h1>Твоё приключение начинается</h1>
+    <p class="meta">Превращай дела в подвиги. Прокачивай героя, побеждай боссов и трать золото на настоящие награды.</p>
+    <div class="feat">
+      <div><b>⚔️</b>Задачи дают опыт и золото</div>
+      <div><b>🔥</b>Серии привычек усиливают награду</div>
+      <div><b>🐉</b>Каждую неделю — новый босс</div>
+      <div><b>🎁</b>Квесты дня, трофеи и лавка наград</div>
+    </div>
+    <form data-form="hero">
+      <input type="hidden" name="avatar" value="${AVATARS[0]}">
+      <div class="lbl">Выбери героя</div>
+      <div class="avatars">${AVATARS.map((a, i) => `<button type="button" class="${i ? '' : 'on'}" data-act="pick" data-name="avatar" data-v="${a}">${a}</button>`).join('')}</div>
+      <div class="lbl">Имя героя</div>
+      <div class="field"><input name="name" value="${esc(user ? user.first_name : '')}" placeholder="Как тебя зовут, странник?" maxlength="24" autocomplete="off" required></div>
+      <button class="btn epic">Начать приключение</button>
+      <button type="button" class="btn alt" data-act="heroDemo">Начать с демо-данными</button>
+    </form>
+  </div>`;
+}
+
+function viewCamp(g) {
+  const T = today();
+  const c = dayCtx(T);
+  const qs = dailyQuests(T);
+  const undone = S.tasks.filter(t => !t.done && t.due && t.due <= T).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : byPrio(a, b)));
+  const doneT = c.doneT;
+  const qDone = qs.filter(q => q.claimed).length;
+  const tip = !S.tipSeen ? `<div class="card tip"><button type="button" class="x" data-act="dismissTip">×</button><b>📜 Как играть</b><ul>
+      <li>Задача даёт <b>10–25 XP</b> и золото (больше за важные)</li>
+      <li>Привычка — <b>6 XP + бонус за серию</b> до +14</li>
+      <li>Весь опыт за неделю — это урон по <b>боссу</b></li>
+      <li>Выполняй <b>квесты дня</b> и забирай награду</li>
+      <li>Золото трать в <b>лавке</b> на свои реальные награды</li></ul></div>` : '';
+  return `${heroCard(g)}${tip}${bossCard(g.boss)}
+  <div class="sec">Квесты дня <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
+  ${questList(qs)}
+  ${c.hT.length ? `<div class="sec">Привычки на сегодня <span class="r">${c.hDone}/${c.hT.length}</span></div>
+  <div class="pills">${c.hT.map(h => `<button type="button" class="pill ${isDone(h, T) ? 'on' : ''}" style="--c:${h.color}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}"><span class="em">${h.emoji}</span><span class="nm">${esc(h.name)}</span><span class="px">+${habitBonus(streak(h))}</span></button>`).join('')}</div>` : ''}
+  <div class="sec">Задачи на сегодня</div>
+  <div class="list">
+    ${undone.map(taskRow).join('')}
+    ${doneT.map(taskRow).join('')}
+    <form class="quick ${undone.length || doneT.length ? 'row' : ''}" data-form="quick">
+      <input name="title" placeholder="Новая задача на сегодня" autocomplete="off" enterkeyhint="done">
+      <button class="iconbtn" aria-label="Добавить">+</button>
+    </form>
+  </div>
+  ${!S.habits.length ? `<div class="card empty"><div class="big">🌱</div>Добавь первую привычку — с ней каждый день приносит опыт<button class="btn" data-act="newHabit">Добавить привычку</button></div>` : ''}`;
+}
+
+function viewTasks() {
+  const T = today();
+  const f = ui.taskFilter;
+  const segs = [['today', 'Сегодня'], ['upcoming', 'Скоро'], ['all', 'Все'], ['done', 'Готово']];
+  let html = `<div class="seg">${segs.map(([k, l]) => `<button type="button" class="${f === k ? 'on' : ''}" data-act="filter" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const group = (title, arr, cls = '') => arr.length ? `<div class="sec ${cls}">${title}</div><div class="list">${arr.map(taskRow).join('')}</div>` : '';
+  const open = S.tasks.filter(t => !t.done);
+  if (f === 'today') {
+    const over = open.filter(t => t.due && t.due < T).sort(byPrio);
+    const tod = open.filter(t => t.due === T).sort(byPrio);
+    const doneT = S.tasks.filter(t => t.done && t.doneAt === T);
+    html += group('Просрочено', over, 'over') + group('Сегодня', tod) + group('Сделано сегодня', doneT);
+    if (!over.length && !tod.length && !doneT.length) html += `<div class="card empty"><div class="big">☀️</div>На сегодня задач нет. Добавь — и бей босса!</div>`;
+  } else if (f === 'upcoming' || f === 'all') {
+    if (f === 'all') html += group('Просрочено', open.filter(t => t.due && t.due < T).sort(byPrio), 'over');
+    const dated = open.filter(t => t.due && (f === 'all' ? t.due >= T : t.due > T));
+    const dates = [...new Set(dated.map(t => t.due))].sort();
+    dates.forEach(s => { html += group(fmtDate(s), dated.filter(t => t.due === s).sort(byPrio)); });
+    if (f === 'all') html += group('Без даты', open.filter(t => !t.due).sort(byPrio));
+    if (!dates.length && (f === 'upcoming' || !open.length)) html += `<div class="card empty"><div class="big">📭</div>${f === 'upcoming' ? 'Нет запланированных задач' : 'Список пуст'}</div>`;
+  } else {
+    const doneAll = S.tasks.filter(t => t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '') || (b.doneTs || 0) - (a.doneTs || 0));
+    if (doneAll.length) html += `<div class="sec">Выполнено · ${doneAll.length}<button type="button" data-act="clearDone">Очистить</button></div><div class="list">${doneAll.slice(0, 150).map(taskRow).join('')}</div>`;
+    else html += `<div class="card empty"><div class="big">✅</div>Выполненных задач пока нет</div>`;
+  }
+  return html;
+}
+
+function viewHabits() {
+  const T = today();
+  const hs = activeHabits();
+  if (!hs.length) return `<div class="card empty"><div class="big">🌱</div><b>Привычек пока нет</b><p class="meta">Каждая отметка — опыт, а серии дают бонус до +14 XP.</p><button class="btn" data-act="newHabit">Добавить привычку</button></div>`;
+  const week = Array.from({ length: 7 }, (_, i) => addDays(T, i - 6));
+  return `<div class="sec">Мои привычки · ${hs.length}</div>` + hs.map(h => {
+    const st = streak(h);
+    return `<div class="card habit" style="--c:${h.color}">
+      <div class="hhead">
+        <div class="hemoji" data-act="editHabit" data-id="${h.id}">${h.emoji}</div>
+        <div class="grow tbody" data-act="editHabit" data-id="${h.id}">
+          <div class="hname">${esc(h.name)}</div>
+          <div class="meta">${st ? `🔥 ${st} · ` : ''}${daysLabel(h.days)} · <span style="color:var(--xp);font-weight:600">+${habitBonus(st)} XP</span></div>
+        </div>
+        <button type="button" class="hcheck ${isDone(h, T) ? 'on' : ''}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}" aria-label="Отметить сегодня">✓</button>
+      </div>
+      <div class="week">${week.map(s => `<button type="button" class="day ${isDone(h, s) ? 'on' : ''} ${scheduled(h, s) ? '' : 'off'} ${s === T ? 'today' : ''}" data-act="toggleHabit" data-id="${h.id}" data-day="${s}"><i></i><span>${WD[wd(s)]}</span></button>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function viewHero(g) {
+  const a = g.all;
+  const slain = Object.entries(S.bosses).filter(([, b]) => b.claimed).sort(([x], [y]) => x.localeCompare(y));
+  const got = Object.keys(S.ach).length;
+  return `${heroCard(g, { big: true })}
+  <div class="kpis">
+    <div class="kpi"><b>${a.xp}</b><span>опыта всего</span></div>
+    <div class="kpi"><b>${a.tasksDone}</b><span>задач выполнено</span></div>
+    <div class="kpi"><b>${a.quests}</b><span>квестов пройдено</span></div>
+    <div class="kpi"><b>🔥 ${a.best}</b><span>рекордная серия</span></div>
+  </div>
+  <div class="sec">Лавка наград <span class="r">💰 ${a.gold}</span></div>
+  <div class="list">
+    ${S.rewards.map(r => `<div class="row">
+      <div class="qicon">${r.emoji}</div>
+      <div class="tbody" data-act="editReward" data-id="${r.id}"><div class="ttl">${esc(r.title)}</div></div>
+      <button type="button" class="buy ${a.gold < r.cost ? 'no' : ''}" data-act="buy" data-id="${r.id}">💰 ${r.cost}</button>
+    </div>`).join('')}
+    <div class="row"><button type="button" class="btn alt" style="margin:0;padding:4px" data-act="newReward">+ Своя награда</button></div>
+  </div>
+  ${S.purchases.length ? `<div class="meta" style="margin:-4px 4px 12px">Последнее: ${S.purchases.slice(-3).reverse().map(p => `${p.emoji} ${esc(p.title)}`).join(' · ')}</div>` : ''}
+  ${slain.length ? `<div class="sec">Поверженные боссы · ${slain.length}</div><div class="card slain">${slain.map(([, b]) => `<span title="${BOSSES[b.idx].n}">${BOSSES[b.idx].e}</span>`).join('')}</div>` : ''}
+  <div class="sec">Трофеи <span class="r">${got}/${ACH.length}</span></div>
+  <div class="trophies">${ACH.map(x => `<div class="trophy ${S.ach[x.id] ? '' : 'locked'}"><div class="ti">${x.i}</div><b>${x.n}</b><span>${x.d}${S.ach[x.id] ? '' : ` · ${x.g} 💰`}</span></div>`).join('')}</div>`;
+}
+
+function viewStats(g) {
+  const T = today();
+  const R = ui.statRange;
+  const days = Array.from({ length: R }, (_, i) => addDays(T, i - R + 1));
+  const from = days[0];
+  const labels = days.map(s => R <= 7 ? WD[wd(s)] : String(parse(s).getDate()));
+  const xVals = days.map(s => g.all.dayXp[s] || 0);
+  const tVals = days.map(tasksDoneOn);
+  const hVals = days.map(s => { const r = dayHabitRatio(s); return r === null ? 0 : Math.round(r * 100); });
+  const xTotal = xVals.reduce((a, b) => a + b, 0);
+  const tTotal = tVals.reduce((a, b) => a + b, 0);
+  const hs = activeHabits();
+  const rates = hs.map(h => habitRate(h, from, T)).filter(x => x !== null);
+  const hAvg = rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length * 100) : 0;
+
+  const weeks = 18;
+  const start = addDays(T, -((weeks - 1) * 7 + wd(T)));
+  let heat = '';
+  for (let i = 0; i < weeks * 7; i++) {
+    const s = addDays(start, i);
+    if (s > T) { heat += '<i class="fut"></i>'; continue; }
+    const r = dayHabitRatio(s);
+    const cls = r === null ? '' : r === 0 ? 'l0' : 'l' + Math.max(1, Math.ceil(r * 4));
+    heat += `<i class="${cls}" title="${s}${r !== null ? ' · ' + Math.round(r * 100) + '%' : ''}"></i>`;
+  }
+
+  return `<div class="seg">${[[7, '7 дней'], [30, '30 дней'], [90, '90 дней']].map(([k, l]) => `<button type="button" class="${R === k ? 'on' : ''}" data-act="range" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="kpis">
+    <div class="kpi"><b style="color:var(--xp)">${xTotal}</b><span>опыта получено</span></div>
+    <div class="kpi"><b>${tTotal}</b><span>задач выполнено</span></div>
+    <div class="kpi"><b>${hAvg}%</b><span>выполнение привычек</span></div>
+    <div class="kpi"><b>${S.tasks.filter(t => !t.done).length}</b><span>задач в работе</span></div>
+  </div>
+  <div class="card"><div class="ctitle"><b>Опыт по дням</b><span class="meta">≈ ${Math.round(xTotal / R)} XP в день</span></div>${bars(xVals, labels, 'var(--xp)')}</div>
+  <div class="card"><div class="ctitle"><b>Выполненные задачи</b><span class="meta">≈ ${(tTotal / R).toFixed(1)} в день</span></div>${bars(tVals, labels, 'var(--accent)')}</div>
+  <div class="card"><div class="ctitle"><b>Привычки по дням</b><span class="meta">% от плана</span></div>${bars(hVals, labels, 'var(--ok)', { max: 100 })}</div>
+  <div class="card"><div class="ctitle"><b>Карта активности</b><span class="meta">${weeks} недель</span></div>
+    <div class="heat">${heat}</div>
+    <div class="legend">меньше <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> больше</div>
+  </div>
+  ${hs.length ? `<div class="sec">По привычкам</div><div class="card" style="padding:4px 14px">${hs.map(h => {
+    const r = habitRate(h, from, T); const pc = r === null ? 0 : Math.round(r * 100);
+    return `<div class="hstat" style="--c:${h.color}"><div class="hemoji sm">${h.emoji}</div><div class="grow">
+      <div class="hs-top"><b>${esc(h.name)}</b><span>${r === null ? '—' : pc + '%'}</span></div>
+      <div class="bar"><i style="width:${pc}%;background:${h.color}"></i></div>
+      <div class="meta">Серия ${streak(h)} · рекорд ${habitHistory(h).best}</div></div></div>`;
+  }).join('')}</div>` : ''}`;
+}
+
+/* ================= render ================= */
+const ICONS = {
+  camp: '<path d="M3 20.5h18M12 3.5 3.8 20.5M12 3.5l8.2 17M12 12.5l-3.2 8M12 12.5l3.2 8"/>',
+  tasks: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.3 1.3L7.3 4.8M3.5 12l1.3 1.3 2.5-2.5M3.5 18l1.3 1.3 2.5-2.5"/>',
+  habits: '<path d="M12 21.5c4 0 7-2.9 7-6.8 0-3-1.8-5.3-3.4-6.8-.4 1.8-1.4 2.9-2.8 3.4C13.2 8 12 5 9.2 2.5 9.2 6.5 5 9 5 14.7c0 3.9 3 6.8 7 6.8z"/>',
+  hero: '<path d="M12 3 20 6v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  stats: '<path d="M4 20V11M10 20V5M16 20v-6M21.5 20h-19"/>',
+};
+const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['hero', 'Герой'], ['stats', 'Хроники']];
+const app = document.getElementById('app');
+const fab = document.getElementById('fab');
+const tabbar = document.getElementById('tabbar');
+
+function render() {
+  if (!S.hero) {
+    document.body.classList.add('onboarding');
+    app.innerHTML = viewOnboarding();
+    tabbar.classList.add('hidden'); fab.classList.add('hidden');
+    return;
+  }
+  document.body.classList.remove('onboarding');
+  tabbar.classList.remove('hidden');
+  const g = game();
+  app.innerHTML = ({ camp: viewCamp, tasks: viewTasks, habits: viewHabits, hero: viewHero, stats: viewStats })[ui.tab](g);
+  tabbar.innerHTML = TABS.map(([k, l]) =>
+    `<button type="button" class="tab ${ui.tab === k ? 'on' : ''}" data-act="tab" data-v="${k}"><svg viewBox="0 0 24 24">${ICONS[k]}</svg>${l}</button>`).join('');
+  fab.classList.toggle('hidden', ui.tab === 'stats' || ui.tab === 'hero');
+}
+
+/* ================= sheets ================= */
+let sheetEl = null;
+function openSheet(title, body) {
+  closeSheet(true);
+  sheetEl = document.createElement('div');
+  sheetEl.className = 'sheet-wrap';
+  sheetEl.innerHTML = `<div class="backdrop" data-act="closeSheet"></div><div class="sheet"><div class="grab"></div>
+    <div class="shead"><h2>${title}</h2><button type="button" class="close" data-act="closeSheet" aria-label="Закрыть">×</button></div>${body}</div>`;
+  document.body.appendChild(sheetEl);
+  requestAnimationFrame(() => requestAnimationFrame(() => sheetEl && sheetEl.classList.add('open')));
+  if (ver('6.1')) safe(() => { tg.BackButton.onClick(closeSheet); tg.BackButton.show(); });
+}
+function closeSheet(instant) {
+  if (!sheetEl) return;
+  const el = sheetEl; sheetEl = null;
+  if (ver('6.1')) safe(() => { tg.BackButton.offClick(closeSheet); tg.BackButton.hide(); });
+  if (instant === true) { el.remove(); return; }
+  el.classList.remove('open');
+  setTimeout(() => el.remove(), 300);
+}
+const focusLater = sel => setTimeout(() => { const i = sheetEl && sheetEl.querySelector(sel); i && i.focus(); }, 320);
+
+function taskSheet(id, presetDue) {
+  const t = id ? S.tasks.find(x => x.id === id) : null;
+  const T = today();
+  const due = t ? (t.due || '') : (presetDue ?? T);
+  const prio = t ? (t.prio || 0) : 0;
+  const dueChips = [[T, 'Сегодня'], [addDays(T, 1), 'Завтра'], [addDays(T, 7 - wd(T)), 'След. неделя'], ['', 'Без даты']];
+  openSheet(t ? 'Задача' : 'Новая задача', `<form data-form="task">
+    <input type="hidden" name="id" value="${t ? t.id : ''}">
+    <input type="hidden" name="prio" value="${prio}">
+    <div class="field"><input name="title" placeholder="Что нужно сделать?" value="${t ? esc(t.title) : ''}" required autocomplete="off" maxlength="200">
+      <textarea name="note" placeholder="Заметка" rows="2" maxlength="1000">${t ? esc(t.note || '') : ''}</textarea></div>
+    <div class="lbl">Срок</div>
+    <div class="chips">${dueChips.map(([v, l]) => `<button type="button" class="chip ${due === v ? 'on' : ''}" data-act="pick" data-name="due" data-v="${v}">${l}</button>`).join('')}
+      <input type="date" name="due" value="${due}" data-sync="due"></div>
+    <div class="lbl">Сложность — от неё зависит награда</div>
+    <div class="chips">${[[0, 'Обычная · 10 XP'], [1, '🟠 Средняя · 15 XP'], [2, '🔴 Эпичная · 25 XP']].map(([v, l]) => `<button type="button" class="chip ${prio === v ? 'on' : ''}" data-act="pick" data-name="prio" data-v="${v}">${l}</button>`).join('')}</div>
+    <button class="btn">${t ? 'Сохранить' : 'Добавить'}</button>
+    ${t ? `<button type="button" class="btn ghost" data-act="delTask" data-id="${t.id}">Удалить задачу</button>` : ''}
+  </form>`);
+  if (!t) focusLater('[name=title]');
+}
+
+function habitSheet(id) {
+  const h = id ? S.habits.find(x => x.id === id) : null;
+  const emoji = h ? h.emoji : EMOJIS[0];
+  const color = h ? h.color : COLORS[S.habits.length % COLORS.length];
+  const days = h ? h.days : [0, 1, 2, 3, 4, 5, 6];
+  openSheet(h ? 'Привычка' : 'Новая привычка', `<form data-form="habit">
+    <input type="hidden" name="id" value="${h ? h.id : ''}">
+    <input type="hidden" name="emoji" value="${emoji}">
+    <input type="hidden" name="color" value="${color}">
+    <div class="field"><input name="name" placeholder="Например: читать 20 минут" value="${h ? esc(h.name) : ''}" required autocomplete="off" maxlength="80"></div>
+    <div class="lbl">Иконка</div>
+    <div class="emojis">${EMOJIS.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-act="pick" data-name="emoji" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="lbl">Цвет</div>
+    <div class="colors">${COLORS.map(c => `<button type="button" style="--c:${c}" class="${c === color ? 'on' : ''}" data-act="pick" data-name="color" data-v="${c}" aria-label="${c}"></button>`).join('')}</div>
+    <div class="lbl">Дни недели</div>
+    <div class="days7">${WD.map((l, i) => `<button type="button" class="${days.includes(i) ? 'on' : ''}" data-act="pickDay" data-v="${i}">${l}</button>`).join('')}</div>
+    <div class="chips" style="margin-top:8px">
+      <button type="button" class="chip" data-act="preset" data-v="0123456">Каждый день</button>
+      <button type="button" class="chip" data-act="preset" data-v="01234">Будни</button>
+      <button type="button" class="chip" data-act="preset" data-v="56">Выходные</button>
+    </div>
+    <button class="btn">${h ? 'Сохранить' : 'Создать'}</button>
+    ${h ? `<button type="button" class="btn ghost" data-act="delHabit" data-id="${h.id}">Удалить привычку</button>` : ''}
+  </form>`);
+  if (!h) focusLater('[name=name]');
+}
+
+function rewardSheet(id) {
+  const r = id ? S.rewards.find(x => x.id === id) : null;
+  const emoji = r ? r.emoji : REWARD_EMOJIS[0];
+  openSheet(r ? 'Награда' : 'Новая награда', `<form data-form="reward">
+    <input type="hidden" name="id" value="${r ? r.id : ''}">
+    <input type="hidden" name="emoji" value="${emoji}">
+    <div class="field"><input name="title" placeholder="Чем себя порадуешь?" value="${r ? esc(r.title) : ''}" required maxlength="60" autocomplete="off"></div>
+    <div class="lbl">Цена в золоте 💰</div>
+    <div class="field"><input name="cost" type="number" inputmode="numeric" min="1" max="100000" value="${r ? r.cost : 50}" required></div>
+    <div class="lbl">Иконка</div>
+    <div class="emojis">${REWARD_EMOJIS.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-act="pick" data-name="emoji" data-v="${e}">${e}</button>`).join('')}</div>
+    <button class="btn">${r ? 'Сохранить' : 'Добавить в лавку'}</button>
+    ${r ? `<button type="button" class="btn ghost" data-act="delReward" data-id="${r.id}">Убрать из лавки</button>` : ''}
+  </form>`);
+  if (!r) focusLater('[name=title]');
+}
+
+function heroSheet() {
+  openSheet('Герой', `<form data-form="heroEdit">
+    <input type="hidden" name="avatar" value="${S.hero.avatar}">
+    <div class="field"><input name="name" value="${esc(S.hero.name)}" maxlength="24" required autocomplete="off"></div>
+    <div class="avatars">${AVATARS.map(a => `<button type="button" class="${a === S.hero.avatar ? 'on' : ''}" data-act="pick" data-name="avatar" data-v="${a}">${a}</button>`).join('')}</div>
+    <button class="btn">Сохранить</button>
+  </form>`);
+}
+
+/* ================= actions ================= */
+// Удаляемые вещи «сдают» заработанное в банк, чтобы опыт и урон по боссу не пропадали
+function bankTask(t) {
+  if (!t.done) return;
+  const r = taskReward(t);
+  S.bank.xp += r.xp; S.bank.gold += r.gold; S.bank.tasks++;
+  if (t.doneAt) S.bank.days[t.doneAt] = (S.bank.days[t.doneAt] || 0) + r.xp;
+}
+function bankHabit(h) {
+  const r = habitHistory(h);
+  S.bank.xp += r.xp; S.bank.gold += r.gold; S.bank.checks += r.n;
+  r.days.forEach(([d, x]) => { S.bank.days[d] = (S.bank.days[d] || 0) + x; });
+}
+function createHero(f, demo) {
+  const name = f.elements.name.value.trim() || 'Странник';
+  S.hero = { name, avatar: f.elements.avatar.value, since: today() };
+  S.rewards = DEFAULT_REWARDS.map(([emoji, title, cost]) => ({ id: uid(), emoji, title, cost }));
+  if (demo) { seed(); S.tipSeen = false; }
+  checkAch(); // уже заработанное — без фанфар
+  save(); render();
+  haptic.ok(); confetti(60);
+  setTimeout(() => toast(S.hero.avatar, `Добро пожаловать, ${esc(name)}!`, 'Первый босс уже ждёт в Лагере'), 300);
+}
+
+const A = {
+  tab(d) { if (ui.tab !== d.v) { ui.tab = d.v; haptic.sel(); render(); window.scrollTo(0, 0); } },
+  filter(d) { ui.taskFilter = d.v; haptic.sel(); render(); },
+  range(d) { ui.statRange = +d.v; haptic.sel(); render(); },
+  fab() { ui.tab === 'habits' ? habitSheet(null) : taskSheet(null, ui.tab === 'tasks' && ui.taskFilter === 'all' ? '' : today()); },
+  newHabit() { habitSheet(null); },
+  editTask(d) { taskSheet(d.id); },
+  editHabit(d) { habitSheet(d.id); },
+  newReward() { rewardSheet(null); },
+  editReward(d) { rewardSheet(d.id); },
+  editHero() { heroSheet(); },
+  closeSheet() { closeSheet(); },
+  closeModal(d, el) { el.closest('.modal-wrap').remove(); },
+  dismissTip() { S.tipSeen = true; save(); render(); },
+  heroDemo(d, el) { const f = el.closest('form'); if (f.reportValidity()) createHero(f, true); },
+  toggleTask(d, el, ev) {
+    const t = S.tasks.find(x => x.id === d.id); if (!t) return;
+    change(ev, () => { t.done = !t.done; t.doneAt = t.done ? today() : null; t.doneTs = t.done ? Date.now() : null; });
+    t.done ? haptic.ok() : haptic.tap();
+  },
+  toggleHabit(d, el, ev) {
+    const h = S.habits.find(x => x.id === d.id); if (!h) return;
+    const isDay = el.classList.contains('day');
+    change(ev, () => {
+      if (h.log[d.day]) delete h.log[d.day];
+      else { h.log[d.day] = 1; if (d.day < h.created) h.created = d.day; }
+    });
+    h.log[d.day] ? haptic.ok() : haptic.tap();
+    const n = app.querySelector(`[data-act="toggleHabit"][data-id="${d.id}"][data-day="${d.day}"]${isDay ? '.day' : ':not(.day)'}`);
+    n && n.classList.add('pop');
+  },
+  claimQuest(d, el, ev) {
+    const q = dailyQuests(d.day).find(x => x.id === d.id);
+    if (!q || !q.ready || q.claimed) return;
+    change(ev, () => { S.claims[d.day + ':' + d.id] = { xp: q.xp, gold: q.gold, d: d.day }; });
+    haptic.ok(); confetti(35);
+    if (dailyQuests(d.day).every(x => x.claimed)) setTimeout(() => toast('🎉', 'Все квесты дня пройдены!', 'Завтра будут новые'), 700);
+  },
+  claimBoss(d, el, ev) {
+    const g = game();
+    if (!g.boss.dead || g.boss.claimed) return;
+    change(ev, () => { const b = S.bosses[g.boss.wk]; b.claimed = true; b.reward = { xp: 120, gold: 60 }; });
+    haptic.heavy(); confetti(120);
+    modal(`<div class="big">🎁</div><div class="kick">ДОБЫЧА</div><h2>${g.boss.def.n} повержен</h2>
+      <div class="meta">Неделя за тобой. В понедельник появится новый враг.</div>
+      <div class="rewards"><span style="color:var(--xp)">+120 XP</span><span style="color:var(--gold)">+60 💰</span></div>`);
+  },
+  async buy(d, el, ev) {
+    const r = S.rewards.find(x => x.id === d.id); if (!r) return;
+    const gold = computeAll().gold;
+    if (gold < r.cost) { haptic.err(); toast('💰', `Не хватает ${r.cost - gold} золота`, 'Выполни пару задач или квест дня'); return; }
+    if (!(await ask(`Купить «${r.title}» за ${r.cost} золота?`))) return;
+    change(ev, () => { S.purchases.push({ rid: r.id, emoji: r.emoji, title: r.title, cost: r.cost, ts: Date.now() }); });
+    haptic.ok(); confetti(50);
+    toast(r.emoji, 'Награда твоя!', `${esc(r.title)} — заслужено. Наслаждайся`);
+  },
+  pick(d, el) {
+    const form = el.closest('form');
+    form.elements[d.name].value = d.v;
+    form.querySelectorAll(`[data-act="pick"][data-name="${d.name}"]`).forEach(b => b.classList.toggle('on', b === el));
+    haptic.sel();
+  },
+  pickDay(d, el) { el.classList.toggle('on'); haptic.sel(); },
+  preset(d, el) {
+    el.closest('form').querySelectorAll('[data-act="pickDay"]').forEach(b => b.classList.toggle('on', d.v.includes(b.dataset.v)));
+    haptic.sel();
+  },
+  async delTask(d) {
+    if (!(await ask('Удалить задачу? Заработанный опыт останется.'))) return;
+    const t = S.tasks.find(x => x.id === d.id); if (t) bankTask(t);
+    S.tasks = S.tasks.filter(x => x.id !== d.id); save(); closeSheet(); render();
+  },
+  async delHabit(d) {
+    if (!(await ask('Удалить привычку? Заработанный опыт останется.'))) return;
+    const h = S.habits.find(x => x.id === d.id); if (h) bankHabit(h);
+    S.habits = S.habits.filter(x => x.id !== d.id); save(); closeSheet(); render();
+  },
+  async delReward(d) {
+    if (!(await ask('Убрать награду из лавки?'))) return;
+    S.rewards = S.rewards.filter(r => r.id !== d.id); save(); closeSheet(); render();
+  },
+  async clearDone() {
+    if (!(await ask('Убрать все выполненные задачи из списка? Опыт и статистика опыта сохранятся.'))) return;
+    S.tasks.filter(t => t.done).forEach(bankTask);
+    S.tasks = S.tasks.filter(t => !t.done); save(); render();
+  },
+};
+
+const F = {
+  hero(f) { createHero(f, false); },
+  heroEdit(f) {
+    S.hero.name = f.elements.name.value.trim() || S.hero.name;
+    S.hero.avatar = f.elements.avatar.value;
+    save(); closeSheet(); render(); haptic.ok();
+  },
+  quick(f) {
+    const title = f.elements.title.value.trim(); if (!title) return;
+    S.tasks.push({ id: uid(), title, note: '', due: today(), prio: 0, done: false, doneAt: null, created: Date.now() });
+    haptic.tap(); save(); render();
+    const inp = app.querySelector('[data-form="quick"] [name=title]'); inp && inp.focus();
+  },
+  task(f) {
+    const e = f.elements;
+    const title = e.title.value.trim(); if (!title) return;
+    const data = { title, note: e.note.value.trim(), due: e.due.value || null, prio: +e.prio.value || 0 };
+    closeSheet();
+    change(null, () => {
+      if (e.id.value) Object.assign(S.tasks.find(t => t.id === e.id.value), data);
+      else S.tasks.push({ id: uid(), ...data, done: false, doneAt: null, created: Date.now() });
+    });
+    haptic.ok();
+  },
+  habit(f) {
+    const e = f.elements;
+    const name = e.name.value.trim(); if (!name) return;
+    const days = [...f.querySelectorAll('[data-act="pickDay"].on')].map(b => +b.dataset.v);
+    if (!days.length) { safe(() => ver('6.2') ? tg.showAlert('Выбери хотя бы один день') : alert('Выбери хотя бы один день')); return; }
+    const data = { name, emoji: e.emoji.value, color: e.color.value, days };
+    closeSheet();
+    change(null, () => {
+      if (e.id.value) Object.assign(S.habits.find(h => h.id === e.id.value), data);
+      else S.habits.push({ id: uid(), ...data, log: {}, created: today(), archived: false });
+    });
+    haptic.ok();
+  },
+  reward(f) {
+    const e = f.elements;
+    const title = e.title.value.trim(); const cost = Math.max(1, Math.round(+e.cost.value || 0));
+    if (!title) return;
+    const data = { title, cost, emoji: e.emoji.value };
+    if (e.id.value) Object.assign(S.rewards.find(r => r.id === e.id.value), data);
+    else S.rewards.push({ id: uid(), ...data });
+    S.rewards.sort((a, b) => a.cost - b.cost);
+    haptic.ok(); save(); closeSheet(); render();
+  },
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const fn = A[el.dataset.act];
+  if (fn) { e.preventDefault(); fn(el.dataset, el, e); }
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const fn = F[e.target.dataset.form];
+  fn && fn(e.target);
+});
+document.addEventListener('input', e => {
+  if (e.target.dataset.sync === 'due') {
+    const v = e.target.value;
+    e.target.closest('form').querySelectorAll('[data-name="due"]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  }
+});
+
+/* ================= demo data ================= */
+function seed() {
+  const rnd = rng(1337);
+  const T = today();
+  const mk = (name, emoji, color, days, p, len) => {
+    const h = { id: uid(), name, emoji, color, days, log: {}, created: addDays(T, -len), archived: false };
+    for (let i = len; i >= 1; i--) { const s = addDays(T, -i); if (days.includes(wd(s)) && rnd() < p + (len - i) / len * 0.2) h.log[s] = 1; }
+    return h;
+  };
+  S.habits.push(
+    mk('Выпить 2 л воды', '💧', COLORS[0], [0, 1, 2, 3, 4, 5, 6], .7, 80),
+    mk('Пробежка', '🏃', COLORS[1], [0, 2, 4], .6, 80),
+    mk('Читать 20 минут', '📚', COLORS[2], [0, 1, 2, 3, 4, 5, 6], .65, 60),
+    mk('Медитация', '🧘', COLORS[4], [0, 1, 2, 3, 4], .55, 45),
+  );
+  const task = (title, due, prio = 0, extra = {}) => S.tasks.push({ id: uid(), title, note: '', due, prio, done: false, doneAt: null, created: Date.now() - Math.floor(rnd() * 1e8), ...extra });
+  task('Оплатить интернет', addDays(T, -1), 2);
+  task('Позвонить маме', T, 1);
+  task('Разобрать почту', T);
+  task('Купить продукты', T, 0, { note: 'Молоко, хлеб, яйца, овощи' });
+  task('Записаться к стоматологу', addDays(T, 1), 1);
+  task('Подготовить отчёт', addDays(T, 3), 2);
+  task('Сходить в спортзал', addDays(T, 2));
+  task('Придумать подарок другу', null);
+  const titles = ['Ответить на письма', 'Уборка', 'Созвон по проекту', 'Погулять с собакой', 'Прочитать статью', 'Заказать воду', 'Обновить резюме', 'Полить цветы', 'Сделать бэкап', 'Встреча с командой'];
+  for (let i = 1; i <= 90; i++) {
+    const n = Math.floor(rnd() * 4);
+    for (let k = 0; k < n; k++) { const s = addDays(T, -i); task(titles[Math.floor(rnd() * titles.length)], s, Math.floor(rnd() * 2.4), { done: true, doneAt: s, doneTs: parse(s).getTime() + 36e6 }); }
+  }
+  // история боссов: несколько недель назад — кто-то повержен, кто-то ушёл
+  const a = computeAll(), wk = weekStart(T);
+  for (let k = 8; k >= 1; k--) {
+    const w = addDays(wk, -7 * k), dmg = sumDays(a.dayXp, w, 7);
+    const win = k % 3 !== 0;
+    S.bosses[w] = { hp: Math.max(150, Math.round(dmg * (win ? .85 : 1.25) / 10) * 10), idx: Math.round(parse(w).getTime() / (7 * 864e5)) % BOSSES.length, claimed: win, reward: win ? { xp: 120, gold: 60 } : undefined };
+  }
+  // пара пройденных квестов и покупка
+  for (let i = 1; i <= 12; i++) S.claims[addDays(T, -i) + ':tasks3'] = { xp: 30, gold: 12, d: addDays(T, -i) };
+  S.purchases.push({ rid: S.rewards[0].id, emoji: S.rewards[0].emoji, title: S.rewards[0].title, cost: S.rewards[0].cost, ts: Date.now() - 864e5 * 3 });
+}
+
+/* ================= boot ================= */
+async function boot() {
+  if (tg) {
+    safe(() => tg.ready());
+    safe(() => tg.expand());
+    if (ver('6.1')) safe(() => { tg.setHeaderColor('secondary_bg_color'); tg.setBackgroundColor('secondary_bg_color'); });
+    if (ver('7.7')) safe(() => tg.disableVerticalSwipes());
+    if (ver('7.10')) safe(() => tg.setBottomBarColor('secondary_bg_color'));
+  }
+  await load();
+  if (S.hero) {
+    settleOldBosses();
+    const got = checkAch();
+    if (got.length) save();
+    render();
+    got.forEach((a, i) => setTimeout(() => toast(a.i, 'Трофей: ' + a.n, `${a.d} · +${a.g} 💰`), 600 + i * 700));
+  } else render();
+}
+boot();
+})();
+</script>
+</body>
+</html>
