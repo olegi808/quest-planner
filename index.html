@@ -180,7 +180,12 @@ main{max-width:560px;margin:0 auto;padding:calc(14px + var(--top)) 16px 72px}
 .cal button.on{background:var(--c);color:#fff;font-weight:700;opacity:1}
 .cal button.miss{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 55%,transparent)}
 .cal button.today{outline:2px solid var(--accent);outline-offset:1px}
-.cal button.fut{visibility:hidden}
+.cal button:disabled{opacity:.25;background:none;cursor:default}
+.calnav{display:flex;align-items:center;justify-content:space-between;text-align:center;margin-bottom:12px}
+.calnav b{font-size:16px}
+.calnav button{border:0;background:var(--field);width:36px;height:36px;border-radius:50%;font-size:22px;line-height:1;padding:0 0 3px}
+.calnav button:disabled{opacity:.25;cursor:default}
+.legend span{display:inline-flex;align-items:center;gap:4px}
 
 /* trophies & shop */
 .trophies{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -306,6 +311,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 const WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const MONTHS_N = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const plural = (n, a, b, c) => { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? a : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? b : c; };
 const fmtDate = s => {
   const t = today();
@@ -862,8 +868,8 @@ function viewHabits() {
     const st = streak(h);
     return `<div class="card habit" style="--c:${h.color}">
       <div class="hhead">
-        <div class="hemoji" data-act="editHabit" data-id="${h.id}">${h.emoji}</div>
-        <div class="grow tbody" data-act="editHabit" data-id="${h.id}">
+        <div class="hemoji tap" data-act="habitStats" data-id="${h.id}">${h.emoji}</div>
+        <div class="grow tbody" data-act="habitStats" data-id="${h.id}">
           <div class="hname">${esc(h.name)}</div>
           <div class="meta">${st ? `🔥 ${st} · ` : ''}${daysLabel(h.days)} · <span style="color:var(--xp);font-weight:600">+${habitBonus(st)} XP</span></div>
         </div>
@@ -1089,16 +1095,35 @@ function habitStatBody(h) {
   const T = today();
   const hist = habitHistory(h);
   const r30 = habitRate(h, addDays(T, -29), T), r90 = habitRate(h, addDays(T, -89), T);
-  const start = addDays(weekStart(T), -35);
-  let cal = WD.map(w => `<div class="wd">${w}</div>`).join('');
-  for (let i = 0; i < 42; i++) {
-    const s = addDays(start, i);
-    if (s > T) { cal += '<button type="button" class="fut" tabindex="-1"></button>'; continue; }
-    const cls = [isDone(h, s) ? 'on' : scheduled(h, s) && s >= h.created && s < T ? 'miss' : '', scheduled(h, s) ? '' : 'off', s === T ? 'today' : ''].join(' ');
-    cal += `<button type="button" class="${cls}" data-act="dayHabit" data-id="${h.id}" data-day="${s}">${parse(s).getDate()}</button>`;
+  // Календарь месяца: ui.calOff — сколько месяцев назад от текущего
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + (ui.calOff || 0);
+  const first = ymd(new Date(y, m, 1)), last = ymd(new Date(y, m + 1, 0));
+  const md = parse(first);
+  let cal = WD.map(w => `<div class="wd">${w}</div>`).join('') + '<span></span>'.repeat(wd(first));
+  let mDone = 0, mPlan = 0;
+  for (let s = first; s <= last; s = addDays(s, 1)) {
+    const n = parse(s).getDate();
+    if (s > T) { cal += `<button type="button" disabled>${n}</button>`; continue; }
+    const sch = scheduled(h, s) && s >= h.created;
+    if (sch) { mPlan++; if (isDone(h, s)) mDone++; }
+    const cls = [isDone(h, s) ? 'on' : sch && s < T ? 'miss' : '', scheduled(h, s) ? '' : 'off', s === T ? 'today' : ''].join(' ');
+    cal += `<button type="button" class="${cls}" data-act="dayHabit" data-id="${h.id}" data-day="${s}">${n}</button>`;
   }
   const pc = x => x === null ? '—' : Math.round(x * 100) + '%';
-  return `<div class="kpis">
+  const calBlock = `<div class="card" style="--c:${h.color}">
+      <div class="calnav"><button type="button" data-act="calMonth" data-v="-1" aria-label="Предыдущий месяц">‹</button>
+        <div><b>${MONTHS_N[md.getMonth()]} ${md.getFullYear()}</b><div class="meta">${mPlan ? `${mDone} из ${mPlan} · ${Math.round(mDone / mPlan * 100)}%` : 'нет запланированных дней'}</div></div>
+        <button type="button" data-act="calMonth" data-v="1" ${ui.calOff >= 0 ? 'disabled' : ''} aria-label="Следующий месяц">›</button></div>
+      <div class="cal">${cal}</div>
+      <div class="legend" style="justify-content:center;gap:10px;margin-top:10px">
+        <span><i style="background:${h.color}"></i> сделано</span>
+        <span><i style="box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 55%,transparent)"></i> пропущено</span>
+        <span><i style="background:var(--field);opacity:.5"></i> выходной</span></div>
+    </div>`;
+  return `<div class="meta" style="margin:-6px 4px 10px">Нажми на день, чтобы отметить или снять отметку</div>
+    ${calBlock}
+    <div class="kpis">
       <div class="kpi"><b>🔥 ${streak(h)}</b><span>текущая серия</span></div>
       <div class="kpi"><b>🏅 ${hist.best}</b><span>рекорд серии</span></div>
       <div class="kpi"><b>${hist.n}</b><span>всего отметок</span></div>
@@ -1106,13 +1131,12 @@ function habitStatBody(h) {
     </div>
     <div class="card"><div class="hs-top"><span>За 30 дней</span><b>${pc(r30)}</b></div><div class="bar"><i style="width:${r30 === null ? 0 : r30 * 100}%;background:${h.color}"></i></div>
       <div class="hs-top" style="margin-top:8px"><span>За 90 дней</span><b>${pc(r90)}</b></div><div class="bar"><i style="width:${r90 === null ? 0 : r90 * 100}%;background:${h.color}"></i></div></div>
-    <div class="lbl">Последние 6 недель · нажми на день, чтобы отметить</div>
-    <div class="cal" style="--c:${h.color}">${cal}</div>
-    <div class="meta" style="margin-top:8px">${daysLabel(h.days)} · следующая отметка даст <b style="color:var(--xp)">+${habitBonus(streak(h))} XP</b></div>
+    <div class="meta" style="margin:0 4px">${daysLabel(h.days)} · следующая отметка даст <b style="color:var(--xp)">+${habitBonus(streak(h))} XP</b></div>
     <button type="button" class="btn alt" data-act="editHabit" data-id="${h.id}">✏️ Изменить привычку</button>`;
 }
 function habitStatsSheet(id) {
   const h = S.habits.find(x => x.id === id); if (!h) return;
+  ui.calOff = 0;
   openSheet(`${h.emoji} ${esc(h.name)}`, `<div id="habitBody" data-id="${h.id}">${habitStatBody(h)}</div>`);
 }
 // Обновить открытую карточку дня/привычки после отметки
@@ -1207,6 +1231,7 @@ const A = {
   },
   dayInfo(d) { haptic.sel(); daySheet(d.day); },
   habitStats(d) { haptic.sel(); habitStatsSheet(d.id); },
+  calMonth(d) { ui.calOff = Math.min(0, (ui.calOff || 0) + +d.v); haptic.sel(); refreshSheets(); },
   goTasks(d) { ui.tab = 'tasks'; ui.taskFilter = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
   dayHabit(d, el, ev) {
     const h = S.habits.find(x => x.id === d.id); if (!h) return;
