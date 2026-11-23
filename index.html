@@ -434,6 +434,34 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .modal .kick{color:var(--rose);font-family:var(--hand);font-size:20px;letter-spacing:.08em}
 .float{font-family:var(--hand);font-size:24px;text-shadow:0 1px 0 #fff,0 0 8px #fff}
 .empty b{font-family:var(--hand);font-size:22px}
+
+/* календарь задач: неделя-карточки + таймлайн */
+.wk{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:10px 10px 12px}
+.wk-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.wk-head b{flex:1;font-family:var(--script);font-size:23px;font-weight:400;text-align:center}
+.wk-head>button:not(.chip){border:0;background:var(--field);width:32px;height:32px;border-radius:50%;font-size:20px;line-height:1;padding:0 0 2px;flex:none}
+.wk-head .chip{padding:2px 10px;font-family:var(--hand);font-size:18px;background:var(--pink2)}
+.wk-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.wkd{border:0;background:var(--paper);border-radius:12px;padding:8px 0 6px;display:flex;flex-direction:column;align-items:center;gap:1px;box-shadow:0 3px 8px -4px rgba(120,80,85,.4);transition:transform .15s,background .15s}
+.wkd span{font-size:11.5px;font-weight:700;color:var(--ink2)}
+.wkd b{font-size:18px;font-weight:600}
+.wkd i{width:5px;height:5px;border-radius:50%;margin-top:3px}
+.wkd i.dot{background:var(--rose)}.wkd i.ok{background:var(--ok)}
+.wkd.today b{color:var(--rose)}
+.wkd.on{background:var(--pink);transform:translateY(-3px)}
+.wkd.on span,.wkd.on b{color:var(--ink)}
+.tl{position:relative;padding-left:60px}
+.tl::before{content:"";position:absolute;left:53px;top:10px;bottom:10px;border-left:1.5px dashed rgba(201,133,145,.5)}
+.tl-row{position:relative;margin-bottom:10px}
+.tl-time{position:absolute;left:-60px;top:16px;width:44px;text-align:right;font-weight:700;font-size:13px}
+.tl-time::after{content:"";position:absolute;right:-13px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--rose)}
+.tl-plain .tl-card{margin-bottom:10px}
+.tl-card{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-left:7px solid var(--pc);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow)}
+.tl-card .ttl{font-weight:600}
+.tl-card.done{opacity:.55}
+.tl-card.done .ttl{text-decoration:line-through}
+.tl-meta{font-size:12.5px;color:var(--ink2);margin-top:2px}
+.timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
 </head>
 <body>
@@ -556,7 +584,9 @@ const ACH = [
 /* ================= state & storage ================= */
 const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false });
 let S = blank();
-const ui = { tab: 'camp', taskFilter: 'today', statRange: 7, home: null };
+const ui = { tab: 'camp', taskFilter: 'today', statRange: 7, home: null, taskMode: 'cal', calDay: null };
+const fmtTime = s => s ? s.replace(/^0(\d)/, '$1') : '';
+const timeRange = t => t.time ? fmtTime(t.time) + (t.timeEnd ? ' – ' + fmtTime(t.timeEnd) : '') : '';
 // Можно ли предложить иконку на главном экране: 'missed' — не добавлена, 'unknown' — платформа не знает
 const canAddHome = () => ui.home === 'missed' || ui.home === 'unknown';
 const homeCard = closable => `<div class="card tip home">${closable ? '<button type="button" class="x" data-act="dismissHome" aria-label="Скрыть">×</button>' : ''}
@@ -844,6 +874,7 @@ function taskRow(t) {
   if (t.done && t.doneAt) meta.push('✓ ' + fmtDate(t.doneAt).toLowerCase());
   else if (t.due && ui.tab === 'tasks' && ui.taskFilter !== 'upcoming') meta.push(`<span class="${over ? 'over' : ''}">${fmtDate(t.due)}</span>`);
   else if (over) meta.push(`<span class="over">${fmtDate(t.due)}</span>`);
+  if (t.time) meta.push('🕘 ' + timeRange(t));
   if (t.note) meta.push(esc(t.note.split('\n')[0]).slice(0, 60));
   return `<div class="row ${t.done ? 'done' : ''}">
     <button type="button" class="chk ${t.done ? 'on' : ''}" data-act="toggleTask" data-id="${t.id}" aria-label="Готово"></button>
@@ -985,11 +1016,56 @@ function viewCamp(g) {
   ${!S.habits.length ? `<div class="card empty"><div class="big">🌱</div>Добавь первую привычку — с ней каждый день приносит опыт<button class="btn" data-act="newHabit">Добавить привычку</button></div>` : ''}`;
 }
 
+/* ---------- календарь: неделя + таймлайн дня ---------- */
+function tlCard(t) {
+  const pc = t.prio === 2 ? '#e39aa6' : t.prio === 1 ? '#e2c08f' : 'var(--pink)';
+  return `<div class="tl-card ${t.done ? 'done' : ''}" style="--pc:${pc}">
+    <div class="tbody" data-act="editTask" data-id="${t.id}">
+      <div class="ttl">${esc(t.title)}</div>
+      <div class="tl-meta">${!t.done && t.due && t.due < today() ? `<span class="over">${fmtDate(t.due)}</span>${t.time ? ' · ' : ''}` : ''}${t.time ? `🕘 ${timeRange(t)}` : t.due && t.due < today() ? '' : 'в течение дня'}${t.note ? ' · ' + esc(t.note.split('\n')[0]).slice(0, 40) : ''}</div>
+    </div>
+    ${!t.done ? `<span class="xpb ${t.prio ? 'p' + t.prio : ''}">+${taskReward(t).xp}</span>` : ''}
+    <button type="button" class="chk ${t.done ? 'on' : ''}" data-act="toggleTask" data-id="${t.id}" aria-label="Готово"></button>
+  </div>`;
+}
+function viewCalendar() {
+  const T = today();
+  const sel = ui.calDay || T;
+  const ws = weekStart(sel);
+  const week = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+  const md = parse(sel);
+  const strip = week.map(s => {
+    const ts = S.tasks.filter(t => t.due === s);
+    const dot = !ts.length ? '' : ts.every(t => t.done) ? 'ok' : 'dot';
+    return `<button type="button" class="wkd ${s === sel ? 'on' : ''} ${s === T ? 'today' : ''}" data-act="calDay" data-day="${s}">
+      <span>${WD[wd(s)]}</span><b>${parse(s).getDate()}</b><i class="${dot}"></i></button>`;
+  }).join('');
+  const dayTasks = S.tasks.filter(t => t.due === sel);
+  const timed = dayTasks.filter(t => t.time).sort((a, b) => a.time.localeCompare(b.time));
+  const untimed = dayTasks.filter(t => !t.time).sort((a, b) => (a.done - b.done) || byPrio(a, b));
+  const overdue = sel === T ? S.tasks.filter(t => !t.done && t.due && t.due < T).sort(byPrio) : [];
+  const done = dayTasks.filter(t => t.done).length;
+  return `<div class="wk">
+      <div class="wk-head"><button type="button" data-act="calWeek" data-v="-7" aria-label="Прошлая неделя">‹</button>
+        <b>${MONTHS_N[md.getMonth()]} ${md.getFullYear()}</b>
+        ${sel !== T ? `<button type="button" class="chip" data-act="calDay" data-day="${T}">сегодня</button>` : ''}
+        <button type="button" data-act="calWeek" data-v="7" aria-label="Следующая неделя">›</button></div>
+      <div class="wk-days">${strip}</div>
+    </div>
+    <div class="sec"><span class="tape">${sel === T ? 'Сегодня' : fmtDate(sel)}</span>${dayTasks.length ? `<span class="r">${done}/${dayTasks.length} готово</span>` : ''}</div>
+    ${overdue.length ? `<div class="lbl" style="color:var(--danger)">Хвосты с прошлых дней</div><div class="tl-plain">${overdue.map(tlCard).join('')}</div>` : ''}
+    ${timed.length ? `<div class="tl">${timed.map(t => `<div class="tl-row"><div class="tl-time">${fmtTime(t.time)}</div>${tlCard(t)}</div>`).join('')}</div>` : ''}
+    ${untimed.length ? `${timed.length ? '<div class="lbl">В течение дня</div>' : ''}<div class="tl-plain">${untimed.map(tlCard).join('')}</div>` : ''}
+    ${!dayTasks.length && !overdue.length ? `<div class="card empty"><div class="big">🌸</div><b>Свободный день</b><p class="meta">Нажми «+», чтобы что-нибудь запланировать</p></div>` : ''}`;
+}
+
 function viewTasks() {
   const T = today();
+  const modes = `<div class="seg">${[['cal', '🗓 Календарь'], ['list', '📋 Список']].map(([k, l]) => `<button type="button" class="${(ui.taskMode === 'cal') === (k === 'cal') ? 'on' : ''}" data-act="taskMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if (ui.taskMode === 'cal') return modes + viewCalendar();
   const f = ui.taskFilter;
   const segs = [['today', 'Сегодня'], ['upcoming', 'Скоро'], ['all', 'Все'], ['done', 'Готово']];
-  let html = `<div class="seg">${segs.map(([k, l]) => `<button type="button" class="${f === k ? 'on' : ''}" data-act="filter" data-v="${k}">${l}</button>`).join('')}</div>`;
+  let html = modes + `<div class="seg">${segs.map(([k, l]) => `<button type="button" class="${f === k ? 'on' : ''}" data-act="filter" data-v="${k}">${l}</button>`).join('')}</div>`;
   const group = (title, arr, cls = '') => arr.length ? `<div class="sec ${cls}"><span class="tape">${title}</span></div><div class="list">${arr.map(taskRow).join('')}</div>` : '';
   const open = S.tasks.filter(t => !t.done);
   if (f === 'today') {
@@ -1176,6 +1252,9 @@ function taskSheet(id, presetDue) {
     <div class="lbl">Срок</div>
     <div class="chips">${dueChips.map(([v, l]) => `<button type="button" class="chip ${due === v ? 'on' : ''}" data-act="pick" data-name="due" data-v="${v}">${l}</button>`).join('')}
       <input type="date" name="due" value="${due}" data-sync="due"></div>
+    <div class="lbl">Время (необязательно)</div>
+    <div class="chips timechips"><input type="time" name="time" value="${t && t.time ? t.time : ''}"> <span class="meta">—</span> <input type="time" name="timeEnd" value="${t && t.timeEnd ? t.timeEnd : ''}">
+      <button type="button" class="chip" data-act="clearTime">Без времени</button></div>
     <div class="lbl">Сложность — от неё зависит награда</div>
     <div class="chips">${[[0, 'Обычная · 10 XP'], [1, '🟠 Средняя · 15 XP'], [2, '🔴 Эпичная · 25 XP']].map(([v, l]) => `<button type="button" class="chip ${prio === v ? 'on' : ''}" data-act="pick" data-name="prio" data-v="${v}">${l}</button>`).join('')}</div>
     <button class="btn">${t ? 'Сохранить' : 'Добавить'}</button>
@@ -1354,7 +1433,15 @@ const A = {
   tab(d) { if (ui.tab !== d.v) { ui.tab = d.v; haptic.sel(); render(); window.scrollTo(0, 0); } },
   filter(d) { ui.taskFilter = d.v; haptic.sel(); render(); },
   range(d) { ui.statRange = +d.v; haptic.sel(); render(); },
-  fab() { ui.tab === 'habits' ? habitSheet(null) : taskSheet(null, ui.tab === 'tasks' && ui.taskFilter === 'all' ? '' : today()); },
+  fab() {
+    if (ui.tab === 'habits') return habitSheet(null);
+    if (ui.tab === 'tasks' && ui.taskMode === 'cal') return taskSheet(null, ui.calDay || today());
+    taskSheet(null, ui.tab === 'tasks' && ui.taskFilter === 'all' ? '' : today());
+  },
+  taskMode(d) { ui.taskMode = d.v; haptic.sel(); render(); },
+  calDay(d) { ui.calDay = d.day; haptic.sel(); render(); },
+  calWeek(d) { ui.calDay = addDays(ui.calDay || today(), +d.v); haptic.sel(); render(); },
+  clearTime(d, el) { const f = el.closest('form'); f.elements.time.value = ''; f.elements.timeEnd.value = ''; haptic.sel(); },
   newHabit() { habitSheet(null); },
   editTask(d) { taskSheet(d.id); },
   editHabit(d) { habitSheet(d.id); },
@@ -1469,7 +1556,8 @@ const F = {
   task(f) {
     const e = f.elements;
     const title = e.title.value.trim(); if (!title) return;
-    const data = { title, note: e.note.value.trim(), due: e.due.value || null, prio: +e.prio.value || 0 };
+    const time = e.time.value || null;
+    const data = { title, note: e.note.value.trim(), due: e.due.value || null, prio: +e.prio.value || 0, time, timeEnd: time && e.timeEnd.value > time ? e.timeEnd.value : null };
     closeSheet();
     change(null, () => {
       if (e.id.value) Object.assign(S.tasks.find(t => t.id === e.id.value), data);
@@ -1537,12 +1625,17 @@ function seed() {
   );
   const task = (title, due, prio = 0, extra = {}) => S.tasks.push({ id: uid(), title, note: '', due, prio, done: false, doneAt: null, created: Date.now() - Math.floor(rnd() * 1e8), ...extra });
   task('Оплатить интернет', addDays(T, -1), 2);
-  task('Позвонить маме', T, 1);
+  task('Обновить документы 💻', T, 0, { time: '09:30', timeEnd: '10:00' });
+  task('Контент-план 🌷', T, 1, { time: '10:00', timeEnd: '11:00' });
+  task('Ревью проекта ✨', T, 2, { time: '11:00', timeEnd: '12:00' });
+  task('Разобрать заказы 🛎️', T, 0, { time: '16:00', timeEnd: '16:30' });
+  task('Позвонить маме 💌', T, 1, { time: '19:00', timeEnd: '19:30' });
   task('Разобрать почту', T);
   task('Купить продукты', T, 0, { note: 'Молоко, хлеб, яйца, овощи' });
-  task('Записаться к стоматологу', addDays(T, 1), 1);
-  task('Подготовить отчёт', addDays(T, 3), 2);
-  task('Сходить в спортзал', addDays(T, 2));
+  task('Записаться к стоматологу', addDays(T, 1), 1, { time: '12:00' });
+  task('Испечь кексы 🧁', addDays(T, 1), 0, { time: '18:00', timeEnd: '19:30' });
+  task('Подготовить отчёт', addDays(T, 3), 2, { time: '10:00', timeEnd: '13:00' });
+  task('Сходить в спортзал 🏋️', addDays(T, 2), 0, { time: '08:00', timeEnd: '09:00' });
   task('Придумать подарок другу', null);
   const titles = ['Ответить на письма', 'Уборка', 'Созвон по проекту', 'Погулять с собакой', 'Прочитать статью', 'Заказать воду', 'Обновить резюме', 'Полить цветы', 'Сделать бэкап', 'Встреча с командой'];
   for (let i = 1; i <= 90; i++) {
