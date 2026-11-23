@@ -163,6 +163,24 @@ main{max-width:560px;margin:0 auto;padding:calc(14px + var(--top)) 16px 72px}
 .hs-top b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar{height:6px;border-radius:3px;background:var(--field);overflow:hidden;margin-bottom:4px}
 .bar i{display:block;height:100%;border-radius:3px}
+/* кликабельная статистика */
+.chart .hit{fill:transparent;cursor:pointer;transition:fill .15s}
+.chart .hit:hover,.chart .hit:active{fill:color-mix(in srgb,var(--text) 7%,transparent)}
+.heat i{cursor:pointer}
+.heat i:active{outline:2px solid var(--accent)}
+.tap{cursor:pointer;transition:transform .1s}
+.tap:active{transform:scale(.97)}
+.kpi.tap{position:relative}
+.kpi.tap::after{content:"›";position:absolute;right:12px;top:10px;color:var(--hint);font-size:18px}
+.kpis.k3{grid-template-columns:repeat(3,1fr)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .wd{font-size:11px;color:var(--hint);text-align:center}
+.cal button{aspect-ratio:1;border:0;border-radius:10px;background:var(--card);font-size:13px;padding:0}
+.cal button.off{opacity:.4}
+.cal button.on{background:var(--c);color:#fff;font-weight:700;opacity:1}
+.cal button.miss{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 55%,transparent)}
+.cal button.today{outline:2px solid var(--accent);outline-offset:1px}
+.cal button.fut{visibility:hidden}
 
 /* trophies & shop */
 .trophies{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -744,6 +762,11 @@ function bars(values, labels, color, opts = {}) {
     if (n <= 7 && v > 0) s += `<text class="val" x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle">${v}</text>`;
     if ((n - 1 - i) % every === 0) s += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${labels[i]}</text>`;
   });
+  // Невидимые зоны нажатия на всю высоту столбца — по ним открывается день
+  if (opts.days) values.forEach((v, i) => {
+    const x = i * (bw + gap) - gap / 2;
+    s += `<rect class="hit" x="${x.toFixed(1)}" y="0" width="${(bw + gap).toFixed(1)}" height="${H}" data-act="dayInfo" data-day="${opts.days[i]}"/>`;
+  });
   return s + '</svg>';
 }
 
@@ -901,27 +924,28 @@ function viewStats(g) {
     if (s > T) { heat += '<i class="fut"></i>'; continue; }
     const r = dayHabitRatio(s);
     const cls = r === null ? '' : r === 0 ? 'l0' : 'l' + Math.max(1, Math.ceil(r * 4));
-    heat += `<i class="${cls}" title="${s}${r !== null ? ' · ' + Math.round(r * 100) + '%' : ''}"></i>`;
+    heat += `<i class="${cls}" title="${s}${r !== null ? ' · ' + Math.round(r * 100) + '%' : ''}" data-act="dayInfo" data-day="${s}"></i>`;
   }
 
   return `<div class="seg">${[[7, '7 дней'], [30, '30 дней'], [90, '90 дней']].map(([k, l]) => `<button type="button" class="${R === k ? 'on' : ''}" data-act="range" data-v="${k}">${l}</button>`).join('')}</div>
   <div class="kpis">
-    <div class="kpi"><b style="color:var(--xp)">${xTotal}</b><span>опыта получено</span></div>
-    <div class="kpi"><b>${tTotal}</b><span>задач выполнено</span></div>
-    <div class="kpi"><b>${hAvg}%</b><span>выполнение привычек</span></div>
-    <div class="kpi"><b>${S.tasks.filter(t => !t.done).length}</b><span>задач в работе</span></div>
+    <div class="kpi tap" data-act="tab" data-v="hero"><b style="color:var(--xp)">${xTotal}</b><span>опыта получено</span></div>
+    <div class="kpi tap" data-act="goTasks" data-v="done"><b>${tTotal}</b><span>задач выполнено</span></div>
+    <div class="kpi tap" data-act="tab" data-v="habits"><b>${hAvg}%</b><span>выполнение привычек</span></div>
+    <div class="kpi tap" data-act="goTasks" data-v="all"><b>${S.tasks.filter(t => !t.done).length}</b><span>задач в работе</span></div>
   </div>
-  <div class="card"><div class="ctitle"><b>Опыт по дням</b><span class="meta">≈ ${Math.round(xTotal / R)} XP в день</span></div>${bars(xVals, labels, 'var(--xp)')}</div>
-  <div class="card"><div class="ctitle"><b>Выполненные задачи</b><span class="meta">≈ ${(tTotal / R).toFixed(1)} в день</span></div>${bars(tVals, labels, 'var(--accent)')}</div>
-  <div class="card"><div class="ctitle"><b>Привычки по дням</b><span class="meta">% от плана</span></div>${bars(hVals, labels, 'var(--ok)', { max: 100 })}</div>
+  <div class="card"><div class="ctitle"><b>Опыт по дням</b><span class="meta">≈ ${Math.round(xTotal / R)} XP в день</span></div>${bars(xVals, labels, 'var(--xp)', { days })}
+    <div class="meta" style="margin-top:6px;text-align:center">👆 Нажми на любой день — покажу подробности</div></div>
+  <div class="card"><div class="ctitle"><b>Выполненные задачи</b><span class="meta">≈ ${(tTotal / R).toFixed(1)} в день</span></div>${bars(tVals, labels, 'var(--accent)', { days })}</div>
+  <div class="card"><div class="ctitle"><b>Привычки по дням</b><span class="meta">% от плана</span></div>${bars(hVals, labels, 'var(--ok)', { max: 100, days })}</div>
   <div class="card"><div class="ctitle"><b>Карта активности</b><span class="meta">${weeks} недель</span></div>
     <div class="heat">${heat}</div>
     <div class="legend">меньше <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> больше</div>
   </div>
   ${hs.length ? `<div class="sec">По привычкам</div><div class="card" style="padding:4px 14px">${hs.map(h => {
     const r = habitRate(h, from, T); const pc = r === null ? 0 : Math.round(r * 100);
-    return `<div class="hstat" style="--c:${h.color}"><div class="hemoji sm">${h.emoji}</div><div class="grow">
-      <div class="hs-top"><b>${esc(h.name)}</b><span>${r === null ? '—' : pc + '%'}</span></div>
+    return `<div class="hstat tap" style="--c:${h.color}" data-act="habitStats" data-id="${h.id}"><div class="hemoji sm">${h.emoji}</div><div class="grow">
+      <div class="hs-top"><b>${esc(h.name)}</b><span>${r === null ? '—' : pc + '%'} ›</span></div>
       <div class="bar"><i style="width:${pc}%;background:${h.color}"></i></div>
       <div class="meta">Серия ${streak(h)} · рекорд ${habitHistory(h).best}</div></div></div>`;
   }).join('')}</div>` : ''}`;
@@ -1027,6 +1051,77 @@ function habitSheet(id) {
   if (!h) focusLater('[name=name]');
 }
 
+/* ---------- подробности дня (из статистики) ---------- */
+function dayBody(s) {
+  const T = today();
+  const all = computeAll();
+  const xp = all.dayXp[s] || 0;
+  const done = S.tasks.filter(t => t.done && t.doneAt === s).sort(byPrio);
+  const missed = s <= T ? S.tasks.filter(t => !t.done && t.due === s).sort(byPrio) : [];
+  const hs = activeHabits().filter(h => (h.created <= s && scheduled(h, s)) || isDone(h, s));
+  const r = dayHabitRatio(s);
+  const quests = Object.entries(S.claims).filter(([, c]) => c.d === s).map(([k]) => QUESTS[k.split(':')[1]]).filter(Boolean);
+  const nothing = !done.length && !missed.length && !hs.length && !quests.length;
+  return `<div class="kpis k3">
+      <div class="kpi"><b style="color:var(--xp)">${xp}</b><span>опыта</span></div>
+      <div class="kpi"><b>${done.length}</b><span>${plural(done.length, 'задача', 'задачи', 'задач')}</span></div>
+      <div class="kpi"><b>${r === null ? '—' : Math.round(r * 100) + '%'}</b><span>привычек</span></div>
+    </div>
+    ${hs.length ? `<div class="lbl">Привычки · нажми, чтобы отметить</div><div class="list">${hs.map(h => `<div class="row" style="--c:${h.color}">
+      <div class="hemoji sm">${h.emoji}</div>
+      <div class="grow"><div class="ttl">${esc(h.name)}</div>${scheduled(h, s) ? '' : '<div class="meta">вне графика</div>'}</div>
+      <button type="button" class="chk ${isDone(h, s) ? 'on' : ''}" data-act="dayHabit" data-id="${h.id}" data-day="${s}" aria-label="Отметить"></button>
+    </div>`).join('')}</div>` : ''}
+    ${done.length ? `<div class="lbl">Выполненные задачи</div><div class="list">${done.map(t => `<div class="row"><span class="qdone" style="width:auto;font-size:16px">✓</span>
+      <div class="grow ttl">${esc(t.title)}</div><span class="xpb ${t.prio ? 'p' + t.prio : ''}">+${taskReward(t).xp}</span></div>`).join('')}</div>` : ''}
+    ${missed.length ? `<div class="lbl">${s === T ? 'Ещё не сделано' : 'Не успел в этот день'}</div><div class="list">${missed.map(t => `<div class="row">
+      <span class="qdone" style="width:auto;font-size:16px;color:var(--danger)">○</span><div class="grow ttl">${esc(t.title)}</div></div>`).join('')}</div>` : ''}
+    ${quests.length ? `<div class="lbl">Пройденные квесты</div><div class="chips">${quests.map(q => `<span class="chip">${q.i} ${q.t}</span>`).join('')}</div>` : ''}
+    ${nothing ? `<div class="card empty"><div class="big">🌙</div>В этот день ничего не отмечено</div>` : ''}`;
+}
+function daySheet(s) {
+  const d = parse(s);
+  openSheet(`${fmtDate(s)}${s >= addDays(today(), -1) ? ` · ${d.getDate()} ${MONTHS[d.getMonth()]}` : ''}`, `<div id="dayBody" data-day="${s}">${dayBody(s)}</div>`);
+}
+
+/* ---------- карточка привычки со статистикой и календарём ---------- */
+function habitStatBody(h) {
+  const T = today();
+  const hist = habitHistory(h);
+  const r30 = habitRate(h, addDays(T, -29), T), r90 = habitRate(h, addDays(T, -89), T);
+  const start = addDays(weekStart(T), -35);
+  let cal = WD.map(w => `<div class="wd">${w}</div>`).join('');
+  for (let i = 0; i < 42; i++) {
+    const s = addDays(start, i);
+    if (s > T) { cal += '<button type="button" class="fut" tabindex="-1"></button>'; continue; }
+    const cls = [isDone(h, s) ? 'on' : scheduled(h, s) && s >= h.created && s < T ? 'miss' : '', scheduled(h, s) ? '' : 'off', s === T ? 'today' : ''].join(' ');
+    cal += `<button type="button" class="${cls}" data-act="dayHabit" data-id="${h.id}" data-day="${s}">${parse(s).getDate()}</button>`;
+  }
+  const pc = x => x === null ? '—' : Math.round(x * 100) + '%';
+  return `<div class="kpis">
+      <div class="kpi"><b>🔥 ${streak(h)}</b><span>текущая серия</span></div>
+      <div class="kpi"><b>🏅 ${hist.best}</b><span>рекорд серии</span></div>
+      <div class="kpi"><b>${hist.n}</b><span>всего отметок</span></div>
+      <div class="kpi"><b style="color:var(--xp)">${hist.xp}</b><span>опыта заработано</span></div>
+    </div>
+    <div class="card"><div class="hs-top"><span>За 30 дней</span><b>${pc(r30)}</b></div><div class="bar"><i style="width:${r30 === null ? 0 : r30 * 100}%;background:${h.color}"></i></div>
+      <div class="hs-top" style="margin-top:8px"><span>За 90 дней</span><b>${pc(r90)}</b></div><div class="bar"><i style="width:${r90 === null ? 0 : r90 * 100}%;background:${h.color}"></i></div></div>
+    <div class="lbl">Последние 6 недель · нажми на день, чтобы отметить</div>
+    <div class="cal" style="--c:${h.color}">${cal}</div>
+    <div class="meta" style="margin-top:8px">${daysLabel(h.days)} · следующая отметка даст <b style="color:var(--xp)">+${habitBonus(streak(h))} XP</b></div>
+    <button type="button" class="btn alt" data-act="editHabit" data-id="${h.id}">✏️ Изменить привычку</button>`;
+}
+function habitStatsSheet(id) {
+  const h = S.habits.find(x => x.id === id); if (!h) return;
+  openSheet(`${h.emoji} ${esc(h.name)}`, `<div id="habitBody" data-id="${h.id}">${habitStatBody(h)}</div>`);
+}
+// Обновить открытую карточку дня/привычки после отметки
+function refreshSheets() {
+  const db = document.getElementById('dayBody'); if (db) db.innerHTML = dayBody(db.dataset.day);
+  const hb = document.getElementById('habitBody');
+  if (hb) { const h = S.habits.find(x => x.id === hb.dataset.id); if (h) hb.innerHTML = habitStatBody(h); }
+}
+
 function rewardSheet(id) {
   const r = id ? S.rewards.find(x => x.id === id) : null;
   const emoji = r ? r.emoji : REWARD_EMOJIS[0];
@@ -1109,6 +1204,18 @@ const A = {
     h.log[d.day] ? haptic.ok() : haptic.tap();
     const n = app.querySelector(`[data-act="toggleHabit"][data-id="${d.id}"][data-day="${d.day}"]${isDay ? '.day' : ':not(.day)'}`);
     n && n.classList.add('pop');
+  },
+  dayInfo(d) { haptic.sel(); daySheet(d.day); },
+  habitStats(d) { haptic.sel(); habitStatsSheet(d.id); },
+  goTasks(d) { ui.tab = 'tasks'; ui.taskFilter = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
+  dayHabit(d, el, ev) {
+    const h = S.habits.find(x => x.id === d.id); if (!h) return;
+    change(ev, () => {
+      if (h.log[d.day]) delete h.log[d.day];
+      else { h.log[d.day] = 1; if (d.day < h.created) h.created = d.day; }
+    });
+    h.log[d.day] ? haptic.ok() : haptic.tap();
+    refreshSheets();
   },
   claimQuest(d, el, ev) {
     const q = dailyQuests(d.day).find(x => x.id === d.id);
