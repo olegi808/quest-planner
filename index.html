@@ -175,6 +175,7 @@ main{max-width:560px;margin:0 auto;padding:14px 16px 72px}
 .tip{background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 18%,var(--card)),var(--card));position:relative}
 .tip ul{margin:8px 0 0;padding-left:18px;font-size:14px}
 .tip li{margin:3px 0}
+.tip.home{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--card)),var(--card))}
 .tip .x{position:absolute;right:10px;top:10px;border:0;background:var(--field);width:26px;height:26px;border-radius:50%;color:var(--hint)}
 
 /* tabbar & fab */
@@ -376,7 +377,13 @@ const ACH = [
 /* ================= state & storage ================= */
 const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false });
 let S = blank();
-const ui = { tab: 'camp', taskFilter: 'today', statRange: 7 };
+const ui = { tab: 'camp', taskFilter: 'today', statRange: 7, home: null };
+// Можно ли предложить иконку на главном экране: 'missed' — не добавлена, 'unknown' — платформа не знает
+const canAddHome = () => ui.home === 'missed' || ui.home === 'unknown';
+const homeCard = closable => `<div class="card tip home">${closable ? '<button type="button" class="x" data-act="dismissHome" aria-label="Скрыть">×</button>' : ''}
+  <div class="hrow"><div style="font-size:34px">📲</div><div class="grow"><b>Планер на главном экране</b>
+  <div class="meta">Открывай одним касанием, как обычное приложение</div></div></div>
+  <button type="button" class="btn" style="margin-top:12px" data-act="addHome">Добавить иконку</button></div>`;
 const LS_KEY = 'tg-planner-v1';
 const CHUNK = 4000;
 const cs = ver('6.9') ? tg.CloudStorage : null;
@@ -775,7 +782,7 @@ function viewCamp(g) {
       <li>Весь опыт за неделю — это урон по <b>боссу</b></li>
       <li>Выполняй <b>квесты дня</b> и забирай награду</li>
       <li>Золото трать в <b>лавке</b> на свои реальные награды</li></ul></div>` : '';
-  return `${heroCard(g)}${tip}${bossCard(g.boss)}
+  return `${heroCard(g)}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
   <div class="sec">Квесты дня <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
   ${questList(qs)}
   ${c.hT.length ? `<div class="sec">Привычки на сегодня <span class="r">${c.hDone}/${c.hT.length}</span></div>
@@ -852,6 +859,7 @@ function viewHero(g) {
     <div class="kpi"><b>${a.quests}</b><span>квестов пройдено</span></div>
     <div class="kpi"><b>🔥 ${a.best}</b><span>рекордная серия</span></div>
   </div>
+  ${canAddHome() ? homeCard(false) : ''}
   <div class="sec">Лавка наград <span class="r">💰 ${a.gold}</span></div>
   <div class="list">
     ${S.rewards.map(r => `<div class="row">
@@ -1080,6 +1088,8 @@ const A = {
   closeSheet() { closeSheet(); },
   closeModal(d, el) { el.closest('.modal-wrap').remove(); },
   dismissTip() { S.tipSeen = true; save(); render(); },
+  dismissHome() { S.homeDismissed = true; save(); render(); toast('📲', 'Скрыто', 'Кнопка останется во вкладке «Герой»'); },
+  addHome() { haptic.tap(); safe(() => tg.addToHomeScreen()); },
   heroDemo(d, el) { const f = el.closest('form'); if (f.reportValidity()) createHero(f, true); },
   toggleTask(d, el, ev) {
     const t = S.tasks.find(x => x.id === d.id); if (!t) return;
@@ -1270,6 +1280,13 @@ async function boot() {
     if (ver('6.1')) safe(() => { tg.setHeaderColor('secondary_bg_color'); tg.setBackgroundColor('secondary_bg_color'); });
     if (ver('7.7')) safe(() => tg.disableVerticalSwipes());
     if (ver('7.10')) safe(() => tg.setBottomBarColor('secondary_bg_color'));
+    if (ver('8.0')) safe(() => {
+      tg.onEvent('homeScreenAdded', () => {
+        ui.home = 'added'; render(); haptic.ok(); confetti(50);
+        toast('📲', 'Иконка добавлена!', 'Теперь планер открывается прямо с главного экрана');
+      });
+      tg.checkHomeScreenStatus(st => { ui.home = st; render(); });
+    });
   }
   await load();
   if (S.hero) {
