@@ -492,20 +492,40 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .move-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-2px 2px 14px}
 .sel{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;font-size:15px;-webkit-appearance:none;appearance:none}
 form.gtype-year .only-month{display:none}
-.wheelcard{padding:10px 10px 14px}
-.wheel{width:100%;max-width:330px;display:block;margin:0 auto}
-.wgrid{fill:none;stroke:rgba(150,110,115,.22);stroke-dasharray:3 4}
-.wsec-bg{fill:rgba(150,110,115,.04);stroke:rgba(150,110,115,.25);stroke-width:1}
-.wprev{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:4 3;opacity:.55}
-.wemo{font-size:20px}
-.wval{font-family:var(--hand);font-size:16px;font-weight:700;fill:var(--ink)}
-.wcenter{fill:var(--paper2);stroke:var(--rose);stroke-width:1.5}
-.wavg{font-family:var(--hand);font-size:15px;font-weight:700;fill:var(--ink)}
-.wrow{display:grid;grid-template-columns:minmax(0,42%) 1fr 26px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--sep)}
+/* колесо баланса в стиле конспекта */
+.wheelcard{position:relative;overflow:visible;padding:18px 8px 14px;margin-top:18px;transform:rotate(-.4deg)}
+.wheelcard::before{content:"";position:absolute;top:-11px;left:50%;width:110px;height:22px;transform:translateX(-50%) rotate(2deg);background:rgba(232,217,199,.9);
+  clip-path:polygon(0 0,100% 6%,97% 50%,100% 100%,0 94%,3% 50%)}
+.wheelcard::after{content:"🌸";position:absolute;right:14px;top:10px;font-size:22px;transform:rotate(15deg)}
+.wheel-head{text-align:center;margin-bottom:2px}
+.wheel-head b{display:block;font-family:var(--script);font-size:27px;font-weight:400;line-height:1.1}
+.wheel-head span{font-family:var(--hand);font-size:18px;color:var(--ink2)}
+.wheel{width:100%;max-width:340px;display:block;margin:0 auto}
+.wstitch{fill:none;stroke:var(--rose);stroke-width:1.3;stroke-dasharray:6 5;opacity:.7}
+.wsec-bg{fill:rgba(255,250,246,.9);stroke:rgba(150,110,115,.18);stroke-width:1}
+.wgrid{fill:none;stroke:rgba(120,90,95,.28);stroke-width:.8;stroke-dasharray:1.5 3.5;stroke-linecap:round}
+.wsec{stroke:rgba(255,250,246,.9);stroke-width:1.2}
+.wprev{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-dasharray:3 3;opacity:.5}
+.wlabel{font-family:var(--hand);font-size:16px;font-weight:700;fill:var(--ink)}
+.wdot{fill:var(--paper2);stroke-width:1.6}
+.wval{font-family:var(--hand);font-size:15px;font-weight:700;fill:var(--ink)}
+.wtape{fill:rgba(239,195,201,.9)}
+.wcenter{fill:var(--paper2);stroke:var(--rose);stroke-width:1.4;stroke-dasharray:3 2.5}
+.wavg{font-family:var(--hand);font-size:20px;font-weight:700;fill:var(--ink)}
+.wavg-l{font-family:var(--hand);font-size:10px;fill:var(--ink2)}
+.wsliders{padding-top:10px}
+.wheel-sub{font-family:var(--hand);font-size:19px;color:var(--ink2);text-align:center;margin-bottom:4px}
+.wrow{display:grid;grid-template-columns:minmax(0,44%) 1fr 26px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--sep)}
 .wrow:last-of-type{border-bottom:0}
-.wname{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wrow b{font-family:var(--hand);font-size:22px;text-align:center}
-.wrow input[type=range]{width:100%;accent-color:var(--c)}
+.wname{display:flex;align-items:center;gap:7px;font-family:var(--hand);font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wemo-s{width:28px;height:28px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:15px;background:color-mix(in srgb,var(--c) 30%,var(--paper2))}
+.wrow b{font-family:var(--hand);font-size:24px;text-align:center}
+.wrow input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:0}
+.wrow input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:4px;background:linear-gradient(90deg,var(--c) var(--p),rgba(150,110,115,.14) var(--p))}
+.wrow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-7.5px;border-radius:50%;background:var(--paper2);border:2.5px solid var(--c);box-shadow:0 2px 6px rgba(120,80,85,.3)}
+.wrow input[type=range]::-moz-range-track{height:7px;border-radius:4px;background:rgba(150,110,115,.14)}
+.wrow input[type=range]::-moz-range-progress{height:7px;border-radius:4px;background:var(--c)}
+.wrow input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--paper2);border:2.5px solid var(--c)}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
 </head>
@@ -1418,24 +1438,46 @@ function goalEditSheet(id, type, area) {
 }
 
 /* ---------- колесо баланса ---------- */
+// Колесо в стиле конспекта: сектора — полоски васи-ленты, сетка карандашом, подписи от руки по дуге
+const WHEEL_SHORT = { health: 'Здоровье', career: 'Работа', money: 'Финансы', love: 'Отношения', family: 'Близкие', growth: 'Развитие', fun: 'Отдых', soul: 'Душа' };
 function wheelSvg(scores, prev) {
-  const C = 150, R = 104, n = AREAS.length, step = 360 / n;
+  const C = 160, R = 104, n = AREAS.length, step = 360 / n, gap = 1.6;
   const pt = (deg, r) => { const a = deg * Math.PI / 180; return [(C + r * Math.cos(a)).toFixed(1), (C + r * Math.sin(a)).toFixed(1)]; };
-  const sector = (i, r) => { const a0 = i * step - 90 - step / 2, a1 = a0 + step; const [x0, y0] = pt(a0, r), [x1, y1] = pt(a1, r); return `M${C} ${C}L${x0} ${y0}A${r} ${r} 0 0 1 ${x1} ${y1}Z`; };
-  let s = `<svg viewBox="0 0 300 300" class="wheel">`;
+  const sector = (i, r, g = 0) => {
+    const a0 = i * step - 90 - step / 2 + g, a1 = a0 + step - 2 * g;
+    const [x0, y0] = pt(a0, r), [x1, y1] = pt(a1, r);
+    return `M${C} ${C}L${x0} ${y0}A${r} ${r} 0 0 1 ${x1} ${y1}Z`;
+  };
+  let s = `<svg viewBox="0 0 320 320" class="wheel"><defs>`;
+  // узор «лента»: светлая основа + косые полоски цвета сферы
+  AREAS.forEach(a => {
+    s += `<pattern id="wp-${a.id}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(40)">
+      <rect width="7" height="7" fill="${a.c}" opacity=".55"/><rect width="3.2" height="7" fill="${a.c}" opacity=".9"/></pattern>`;
+  });
+  // дуги для подписей: верхняя половина читается по часовой, нижняя — против, чтобы текст не был вверх ногами
+  AREAS.forEach((a, i) => {
+    const mid = i * step - 90, rr = R + 19, a0 = mid - step / 2 + 2, a1 = mid + step / 2 - 2;
+    const bottom = Math.sin(mid * Math.PI / 180) > 0.05;
+    const rl = bottom ? rr + 9 : rr;
+    const [x0, y0] = pt(bottom ? a1 : a0, rl), [x1, y1] = pt(bottom ? a0 : a1, rl);
+    s += `<path id="wl-${a.id}" d="M${x0} ${y0}A${rl} ${rl} 0 0 ${bottom ? 0 : 1} ${x1} ${y1}" fill="none"/>`;
+  });
+  s += `</defs>`;
+  s += `<circle cx="${C}" cy="${C}" r="${R + 6}" class="wstitch"/>`;
+  AREAS.forEach((a, i) => { s += `<path d="${sector(i, R, gap)}" class="wsec-bg"/>`; });
   for (let k = 2; k <= 10; k += 2) s += `<circle cx="${C}" cy="${C}" r="${R * k / 10}" class="wgrid"/>`;
-  AREAS.forEach((a, i) => { s += `<path d="${sector(i, R)}" class="wsec-bg"/>`; });
-  AREAS.forEach((a, i) => { const v = scores[a.id] || 0; s += `<path d="${sector(i, R * v / 10)}" fill="${a.c}" opacity=".85"/>`; });
-  if (prev) AREAS.forEach((a, i) => { const v = prev[a.id] || 0; s += `<path d="${sector(i, R * v / 10)}" class="wprev"/>`; });
+  AREAS.forEach((a, i) => { const v = scores[a.id] || 0; if (v) s += `<path d="${sector(i, R * v / 10, gap)}" fill="url(#wp-${a.id})" class="wsec"/>`; });
+  if (prev) AREAS.forEach((a, i) => { const v = prev[a.id] || 0; s += `<path d="${sector(i, R * v / 10, gap)}" class="wprev"/>`; });
   AREAS.forEach((a, i) => {
     const mid = i * step - 90;
-    const [lx, ly] = pt(mid, R + 24);
-    s += `<text x="${lx}" y="${ly}" class="wemo" text-anchor="middle" dominant-baseline="central">${a.e}</text>`;
-    const v = scores[a.id] || 0, [vx, vy] = pt(mid, Math.max(R * v / 10 - 13, 26));
-    s += `<text x="${vx}" y="${vy}" class="wval" text-anchor="middle" dominant-baseline="central">${v}</text>`;
+    s += `<text class="wlabel"><textPath href="#wl-${a.id}" startOffset="50%" text-anchor="middle">${WHEEL_SHORT[a.id]}</textPath></text>`;
+    const v = scores[a.id] || 0, [vx, vy] = pt(mid, Math.max(R * v / 10 - 14, 36));
+    s += `<circle cx="${vx}" cy="${vy}" r="10" class="wdot" stroke="${a.c}"/><text x="${vx}" y="${vy}" class="wval" text-anchor="middle" dominant-baseline="central">${v}</text>`;
   });
   const avg = AREAS.reduce((x, a) => x + (scores[a.id] || 0), 0) / n;
-  s += `<circle cx="${C}" cy="${C}" r="17" class="wcenter"/><text x="${C}" y="${C}" class="wavg" text-anchor="middle" dominant-baseline="central">${avg.toFixed(1)}</text>`;
+  s += `<circle cx="${C}" cy="${C}" r="24" class="wcenter"/>
+    <text x="${C}" y="${C - 3}" class="wavg" text-anchor="middle" dominant-baseline="central">${avg.toFixed(1)}</text>
+    <text x="${C}" y="${C + 12}" class="wavg-l" text-anchor="middle">баланс</text>`;
   return s + '</svg>';
 }
 const wheelAvg = sc => AREAS.reduce((x, a) => x + (sc[a.id] || 0), 0) / AREAS.length;
@@ -1446,13 +1488,14 @@ function viewWheel() {
   const weak = [...AREAS].sort((a, b) => (d[a.id] || 0) - (d[b.id] || 0)).slice(0, 2);
   const delta = last && prev ? wheelAvg(last.s) - wheelAvg(prev.s) : null;
   return `<div class="card wheelcard">
+      <div class="wheel-head"><b>Моё колесо баланса</b><span>${new Date().getDate()} ${MONTHS[new Date().getMonth()]}</span></div>
       <div id="wheelBox">${wheelSvg(d, last ? last.s : null)}</div>
       <div class="meta" style="text-align:center">${last ? `Последняя оценка: ${fmtDate(last.d).toLowerCase()} · средний балл ${wheelAvg(last.s).toFixed(1)}${delta !== null ? ` (${delta >= 0 ? '+' : ''}${delta.toFixed(1)})` : ''}` : 'Оцени каждую сферу жизни от 1 до 10 — честно, без идеала'}</div>
       ${last ? '<div class="legend" style="justify-content:center;margin-top:6px"><span><i style="border:1.5px dashed var(--ink2)"></i> прошлая оценка</span></div>' : ''}
     </div>
-    <div class="card">${AREAS.map(a => `<div class="wrow">
-      <span class="wname">${a.e} ${a.n}</span>
-      <input type="range" min="1" max="10" step="1" value="${d[a.id] || 5}" data-wheel="${a.id}" style="--c:${a.c}" aria-label="${a.n}">
+    <div class="card wsliders"><div class="wheel-sub">Оцени каждую сферу от 1 до 10</div>${AREAS.map(a => `<div class="wrow" style="--c:${a.c}">
+      <span class="wname"><span class="wemo-s">${a.e}</span>${a.n}</span>
+      <input type="range" min="1" max="10" step="1" value="${d[a.id] || 5}" data-wheel="${a.id}" style="--p:${((d[a.id] || 5) - 1) / 9 * 100}%" aria-label="${a.n}">
       <b id="wv-${a.id}">${d[a.id] || 5}</b></div>`).join('')}
       <button type="button" class="btn" data-act="saveWheel">Сохранить оценку · +20 XP</button>
       <div class="meta" style="text-align:center;margin-top:6px">Опыт дают раз в неделю. Удобно пересматривать колесо раз в месяц</div>
@@ -2020,6 +2063,7 @@ document.addEventListener('input', e => {
     const id = e.target.dataset.wheel, v = +e.target.value;
     ui.wheelDraft[id] = v;
     const lbl = document.getElementById('wv-' + id); if (lbl) lbl.textContent = v;
+    e.target.style.setProperty('--p', (v - 1) / 9 * 100 + '%');
     const last = S.wheel[S.wheel.length - 1];
     const box = document.getElementById('wheelBox'); if (box) box.innerHTML = wheelSvg(ui.wheelDraft, last ? last.s : null);
     haptic.sel();
