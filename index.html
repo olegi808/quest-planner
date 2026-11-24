@@ -467,6 +467,45 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .tl-card.done{opacity:.55}
 .tl-card.done .ttl{text-decoration:line-through}
 .tl-meta{font-size:12.5px;color:var(--ink2);margin-top:2px}
+/* цели: схема уровней, карточки, колесо баланса */
+.tab{font-size:14.5px}
+.tab svg{width:22px;height:22px}
+.pyr{display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px 14px}
+.pyr>i{font-style:normal;color:var(--ink2);font-size:14px;line-height:1.1}
+.pyr-step{display:flex;justify-content:space-between;align-items:center;border-radius:18px;padding:7px 16px;font-weight:700;font-size:14px}
+.pyr-step b{font-family:var(--hand);font-size:20px;margin-left:12px}
+.pyr-step.p1{width:100%;background:#dfe5d6}.pyr-step.p2{width:90%;background:var(--pink)}
+.pyr-step.p3{width:80%;background:#f1e2cf}.pyr-step.p4{width:70%;background:#dfe5d6}
+.pyr-step.p5{width:66%;white-space:nowrap;background:var(--card);border:1px solid var(--line)}
+.pyr-note{margin-top:12px;font-size:12.5px;color:var(--ink2);text-align:center;border:1px dashed var(--sep);border-radius:12px;padding:8px 12px}
+.goal{border-left:6px solid var(--c);padding:12px 14px}
+.goal .g-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.goal .g-area{font-size:20px}
+.goal .g-title{flex:1;font-weight:700}
+.goal .g-pc{font-family:var(--hand);font-size:20px;color:var(--ink2)}
+.goal .g-cup{font-size:20px}
+.goal .bar{height:8px}
+.goal.gdone .g-title{text-decoration:line-through;color:var(--ink2)}
+.note-soft{background:#eef1e8!important;font-size:14px}
+.principles{background:#eef1e8!important;margin-top:24px}
+.principles li{margin:4px 0}
+.move-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-2px 2px 14px}
+.sel{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;font-size:15px;-webkit-appearance:none;appearance:none}
+form.gtype-year .only-month{display:none}
+.wheelcard{padding:10px 10px 14px}
+.wheel{width:100%;max-width:330px;display:block;margin:0 auto}
+.wgrid{fill:none;stroke:rgba(150,110,115,.22);stroke-dasharray:3 4}
+.wsec-bg{fill:rgba(150,110,115,.04);stroke:rgba(150,110,115,.25);stroke-width:1}
+.wprev{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:4 3;opacity:.55}
+.wemo{font-size:20px}
+.wval{font-family:var(--hand);font-size:16px;font-weight:700;fill:var(--ink)}
+.wcenter{fill:var(--paper2);stroke:var(--rose);stroke-width:1.5}
+.wavg{font-family:var(--hand);font-size:15px;font-weight:700;fill:var(--ink)}
+.wrow{display:grid;grid-template-columns:minmax(0,42%) 1fr 26px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--sep)}
+.wrow:last-of-type{border-bottom:0}
+.wname{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrow b{font-family:var(--hand);font-size:22px;text-align:center}
+.wrow input[type=range]{width:100%;accent-color:var(--c)}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
 </head>
@@ -525,7 +564,20 @@ const OLD_COLORS = ['#2f80ed','#34c759','#ff9500','#ff3b30','#af52de','#32ade6',
 const COLORS = ['#e39aa6','#9fbb98','#e2b67f','#b49ccd','#94bcd3','#d4a98e','#c48d9c','#a3b4c8'];
 const AVATARS = ['🧙','🧝','🦸','🧛','🧚','🤴','👸','🦊','🐺','🦁','🐱','🐲'];
 const REWARD_EMOJIS = ['☕','🍰','🎮','🎬','🍕','😴','🛍️','📱','🍿','🎧','🛁','🍣','🎲','📖','🏖️','🎁'];
-const DEFAULT_REWARDS = [['☕', 'Кофе с десертом', 30], ['🎬', 'Серия любимого сериала', 40], ['🎮', 'Час игр без чувства вины', 60], ['😴', 'Поспать подольше', 80], ['🍕', 'Заказать пиццу', 150], ['🛍️', 'Купить себе что-то приятное', 400]];
+// Сферы жизни для колеса баланса и целей
+const AREAS = [
+  { id: 'health', e: '💪', n: 'Здоровье', c: '#e39aa6' },
+  { id: 'career', e: '💼', n: 'Работа', c: '#b49ccd' },
+  { id: 'money', e: '💰', n: 'Финансы', c: '#e2b67f' },
+  { id: 'love', e: '❤️', n: 'Отношения', c: '#c48d9c' },
+  { id: 'family', e: '🏡', n: 'Семья и друзья', c: '#9fbb98' },
+  { id: 'growth', e: '📚', n: 'Развитие', c: '#94bcd3' },
+  { id: 'fun', e: '🎨', n: 'Отдых и хобби', c: '#d4a98e' },
+  { id: 'soul', e: '🌿', n: 'Душевный баланс', c: '#a3b4c8' },
+];
+const areaOf = id => AREAS.find(a => a.id === id) || AREAS[5];
+const GOAL_REWARD = { year: { xp: 100, gold: 50 }, month: { xp: 40, gold: 20 } };
+const DEFAULT_REWARDS =[['☕', 'Кофе с десертом', 30], ['🎬', 'Серия любимого сериала', 40], ['🎮', 'Час игр без чувства вины', 60], ['😴', 'Поспать подольше', 80], ['🍕', 'Заказать пиццу', 150], ['🛍️', 'Купить себе что-то приятное', 400]];
 
 const BOSSES = [
   { e: '🐉', n: 'Дракон Прокрастинации', d: 'Шепчет: «сделаешь завтра»' },
@@ -585,10 +637,13 @@ const ACH = [
   { id: 'l20', i: '🌠', n: 'Полубог', d: 'Достигни 20 уровня', g: 200, ok: s => s.level >= 20 },
   { id: 'buy1', i: '🛍️', n: 'Заслуженный отдых', d: 'Купи награду в лавке', g: 10, ok: s => s.purchases >= 1 },
   { id: 'rich', i: '🏦', n: 'Казначей', d: 'Накопи 500 золота', g: 50, ok: s => s.gold >= 500 },
+  { id: 'goal1', i: '🏹', n: 'В яблочко', d: 'Достигни первой цели', g: 40, ok: s => s.goalsDone >= 1 },
+  { id: 'goal5', i: '🗻', n: 'Покоритель вершин', d: 'Достигни 5 целей', g: 120, ok: s => s.goalsDone >= 5 },
+  { id: 'wheel1', i: '🎡', n: 'Взгляд на себя', d: 'Заполни колесо баланса', g: 15, ok: s => s.wheels >= 1 },
 ];
 
 /* ================= state & storage ================= */
-const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false });
+const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false, goals: [], weekFocus: {}, wheel: [] });
 let S = blank();
 const ui = { tab: 'camp', taskFilter: 'today', statRange: 7, home: null, taskMode: 'cal', calDay: null };
 const fmtTime = s => s ? s.replace(/^0(\d)/, '$1') : '';
@@ -779,9 +834,17 @@ function computeAll() {
   let bosses = 0;
   Object.values(S.bosses).forEach(b => { if (b.claimed) { bosses++; xp += b.reward.xp; gold += b.reward.gold; } });
   Object.values(S.ach).forEach(a => { gold += a.g || 0; });
+  // цели: шаг = 5 XP, достигнутая цель — крупная награда
+  let goalsDone = 0;
+  for (const g of S.goals) {
+    for (const st of g.steps) if (st.done) { xp += 5; gold += 1; if (st.doneAt) add(st.doneAt, 5); }
+    if (g.done) { const r = GOAL_REWARD[g.type]; xp += r.xp; gold += r.gold; goalsDone++; if (g.doneAt) add(g.doneAt, r.xp); }
+  }
+  // колесо баланса: +20 XP за оценку, не чаще раза в неделю
+  xp += new Set(S.wheel.map(w => weekStart(w.d))).size * 20;
   const spent = S.purchases.reduce((a, p) => a + p.cost, 0);
   gold -= spent;
-  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, ...levelInfo(xp) };
+  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, goalsDone, wheels: S.wheel.length, ...levelInfo(xp) };
 }
 function bossState(all) {
   const T = today(), wk = weekStart(T);
@@ -1104,7 +1167,9 @@ function viewCalendar() {
       <div class="wk-days">${strip}</div>
     </div>
     <div class="sec"><span class="tape">${sel === T ? 'Сегодня' : fmtDate(sel)}</span>${dayTasks.length ? `<span class="r">${done}/${dayTasks.length} готово</span>` : ''}</div>
-    ${overdue.length ? `<div class="lbl" style="color:var(--danger)">Хвосты с прошлых дней</div><div class="tl-plain">${overdue.map(tlCard).join('')}</div>` : ''}
+    ${dayTasks.filter(t => !t.done).length > 7 ? `<div class="card note-soft">🌿 На этот день ${dayTasks.filter(t => !t.done).length} ${plural(dayTasks.filter(t => !t.done).length, 'задача', 'задачи', 'задач')}. Лучше выполнить 7 и почувствовать прогресс, чем 25 и устать от вины — часть можно перенести.</div>` : ''}
+    ${overdue.length ? `<div class="lbl" style="color:var(--danger)">Хвосты с прошлых дней</div><div class="tl-plain">${overdue.map(tlCard).join('')}</div>
+      <div class="move-row"><span class="meta">Перенос — не провал, а корректировка плана</span><button type="button" class="chip" data-act="moveOverdue">Перенести на сегодня</button></div>` : ''}
     ${timed.length ? `<div class="tl">${timed.map(t => `<div class="tl-row"><div class="tl-time">${fmtTime(t.time)}</div>${tlCard(t)}</div>`).join('')}</div>` : ''}
     ${untimed.length ? `${timed.length ? '<div class="lbl">В течение дня</div>' : ''}<div class="tl-plain">${untimed.map(tlCard).join('')}</div>` : ''}
     ${!dayTasks.length && !overdue.length ? `<div class="card empty"><div class="big">🌸</div><b>Свободный день</b><p class="meta">Нажми «+», чтобы что-нибудь запланировать</p></div>` : ''}`;
@@ -1242,6 +1307,163 @@ function viewStats(g) {
   }).join('')}</div>` : ''}`;
 }
 
+/* ================= цели и колесо баланса ================= */
+const curYear = () => today().slice(0, 4);
+const curMonth = () => today().slice(0, 7);
+function goalProgress(g) {
+  const tasks = S.tasks.filter(t => t.goalId === g.id);
+  const tot = g.steps.length + tasks.length;
+  const dn = g.steps.filter(s => s.done).length + tasks.filter(t => t.done).length;
+  return { tot, dn, p: g.done ? 1 : tot ? dn / tot : 0, tasks };
+}
+function goalCard(g) {
+  const a = areaOf(g.area), pr = goalProgress(g);
+  const parent = g.parent && S.goals.find(x => x.id === g.parent);
+  return `<div class="card goal tap ${g.done ? 'gdone' : ''}" style="--c:${a.c}" data-act="goalSheet" data-id="${g.id}">
+    <div class="g-top"><span class="g-area">${a.e}</span><b class="g-title">${esc(g.title)}</b>${g.done ? '<span class="g-cup">🏆</span>' : `<span class="g-pc">${Math.round(pr.p * 100)}%</span>`}</div>
+    <div class="bar"><i style="width:${pr.p * 100}%;background:${a.c}"></i></div>
+    <div class="meta">${pr.tot ? `${pr.dn}/${pr.tot} шагов и задач` : 'добавь шаги к цели'} · ${a.n}${parent ? ` · ↑ ${esc(parent.title)}` : ''}</div>
+  </div>`;
+}
+function viewGoals() {
+  const modes = `<div class="seg">${[['goals', '🎯 Цели'], ['wheel', '🎡 Колесо баланса']].map(([k, l]) => `<button type="button" class="${(ui.goalMode || 'goals') === k ? 'on' : ''}" data-act="goalMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if (ui.goalMode === 'wheel') return modes + viewWheel();
+  const T = today(), y = curYear(), m = curMonth();
+  const yG = S.goals.filter(g => g.type === 'year' && g.period === y);
+  const mG = S.goals.filter(g => g.type === 'month' && g.period === m);
+  const oldM = S.goals.filter(g => g.type === 'month' && g.period < m && !g.done);
+  const wk = weekStart(T), focus = S.weekFocus[wk] || [];
+  const dayT = S.tasks.filter(t => t.due === T);
+  const doneToday = S.tasks.filter(t => t.done && t.doneAt === T).length;
+  const step = (cls, label, val, act) => `<div class="pyr-step ${cls} ${act ? 'tap' : ''}" ${act || ''}><span>${label}</span><b>${val}</b></div>`;
+  return `${modes}
+  <div class="card pyr">
+    ${step('p1', `Цели ${y} года`, `${yG.filter(g => g.done).length}/${yG.length}`)}<i>↓</i>
+    ${step('p2', `Цели на ${MONTHS_N[+m.slice(5) - 1].toLowerCase()}`, `${mG.filter(g => g.done).length}/${mG.length}`)}<i>↓</i>
+    ${step('p3', 'Фокус недели', `${focus.filter(f => f.done).length}/${focus.length}`)}<i>↓</i>
+    ${step('p4', 'План дня', `${dayT.filter(t => t.done).length}/${dayT.length}`, 'data-act="goTasks" data-v="cal"')}<i>↓</i>
+    ${step('p5', 'Выполнено сегодня', doneToday)}
+    <div class="pyr-note">🤍 Главная цель — освободить голову для жизни, а не хранить в ней список дел</div>
+  </div>
+
+  <div class="sec"><span class="tape">Цели ${y} года</span><button type="button" data-act="newGoal" data-v="year">+ цель</button></div>
+  ${yG.map(goalCard).join('') || `<div class="card empty">Пока нет целей на год. Достаточно 3–5 — больше превращается в список желаний</div>`}
+  ${yG.filter(g => !g.done).length > 5 ? `<div class="card note-soft">🌿 Целей на год уже ${yG.length}. Лучше держать в фокусе 3–5 — остальное подождёт.</div>` : ''}
+
+  <div class="sec"><span class="tape">Цели на ${MONTHS_N[+m.slice(5) - 1].toLowerCase()}</span><button type="button" data-act="newGoal" data-v="month">+ цель</button></div>
+  ${mG.map(goalCard).join('') || `<div class="card empty">Разбей цель года на шаг этого месяца</div>`}
+  ${oldM.length ? `<div class="card note-soft">Не завершено в прошлых месяцах: ${oldM.map(g => `<b>${esc(g.title)}</b>`).join(', ')}
+    <button type="button" class="chip" style="margin-top:8px" data-act="moveOldGoals">Перенести в этот месяц</button></div>` : ''}
+
+  <div class="sec"><span class="tape">Фокус недели</span><span class="r">до 3 главных дел</span></div>
+  <div class="list">
+    ${focus.map(f => `<div class="row"><button type="button" class="chk ${f.done ? 'on' : ''}" data-act="toggleFocus" data-id="${f.id}"></button>
+      <div class="grow ttl" style="${f.done ? 'text-decoration:line-through;color:var(--hint)' : ''}">${esc(f.text)}</div>
+      <button type="button" class="close" data-act="delFocus" data-id="${f.id}" aria-label="Удалить">×</button></div>`).join('')}
+    ${focus.length < 3 ? `<form class="quick ${focus.length ? 'row' : ''}" data-form="focus"><input name="text" placeholder="Что важно сделать на этой неделе?" autocomplete="off" maxlength="120"><button class="iconbtn" aria-label="Добавить">+</button></form>` : ''}
+  </div>
+
+  <div class="card tip principles"><b>4 принципа спокойного планирования</b><ul>
+    <li>🎯 Не больше 3–5 целей в год</li>
+    <li>🌿 Не планируй каждый час — оставь место для жизни</li>
+    <li>🧠 Не держи задачи в голове — сразу записывай</li>
+    <li>🤍 Не больше 7 задач в день: лучше сделать 7, чем устать от 25</li></ul></div>`;
+}
+function goalSheet(id) {
+  const g = S.goals.find(x => x.id === id); if (!g) return;
+  openSheet(`${areaOf(g.area).e} ${esc(g.title)}`, `<div id="goalBody" data-id="${g.id}">${goalBody(g)}</div>`);
+}
+function goalBody(g) {
+  const a = areaOf(g.area), pr = goalProgress(g), r = GOAL_REWARD[g.type];
+  const kids = S.goals.filter(x => x.parent === g.id);
+  return `<div class="card" style="--c:${a.c}">
+      <div class="hs-top"><span>${g.type === 'year' ? `Цель ${g.period} года` : `Цель на ${MONTHS_N[+g.period.slice(5) - 1].toLowerCase()}`} · ${a.n}</span><b>${Math.round(pr.p * 100)}%</b></div>
+      <div class="bar" style="height:9px"><i style="width:${pr.p * 100}%;background:${a.c}"></i></div>
+    </div>
+    <div class="lbl">Шаги · каждый +5 XP</div>
+    <div class="list">
+      ${g.steps.map(s => `<div class="row"><button type="button" class="chk ${s.done ? 'on' : ''}" data-act="toggleStep" data-id="${g.id}" data-step="${s.id}"></button>
+        <div class="grow ttl" style="${s.done ? 'text-decoration:line-through;color:var(--hint)' : ''}">${esc(s.text)}</div>
+        <button type="button" class="close" data-act="delStep" data-id="${g.id}" data-step="${s.id}" aria-label="Удалить шаг">×</button></div>`).join('')}
+      <form class="quick ${g.steps.length ? 'row' : ''}" data-form="step" data-id="${g.id}"><input name="text" placeholder="Новый шаг к цели" autocomplete="off" maxlength="120"><button class="iconbtn" aria-label="Добавить шаг">+</button></form>
+    </div>
+    ${kids.length ? `<div class="lbl">Цели месяцев на пути к ней</div>${kids.map(goalCard).join('')}` : ''}
+    <div class="lbl">Задачи по этой цели</div>
+    ${pr.tasks.length ? `<div class="tl-plain">${pr.tasks.sort((x, y) => x.done - y.done).map(tlCard).join('')}</div>` : '<div class="meta" style="margin:0 4px 8px">Привяжи задачи к цели — они тоже двигают прогресс</div>'}
+    <button type="button" class="chip" data-act="taskForGoal" data-id="${g.id}">+ Задача к цели</button>
+    ${g.done ? `<button type="button" class="btn alt" data-act="completeGoal" data-id="${g.id}">Вернуть в работу</button>`
+      : `<button type="button" class="btn epic" data-act="completeGoal" data-id="${g.id}">🏆 Цель достигнута · +${r.xp} XP</button>`}
+    <button type="button" class="btn alt" data-act="editGoal" data-id="${g.id}">✏️ Изменить цель</button>`;
+}
+function goalEditSheet(id, type, area) {
+  const g = id ? S.goals.find(x => x.id === id) : null;
+  type = g ? g.type : (type || 'month');
+  area = g ? g.area : (area || 'growth');
+  const yG = S.goals.filter(x => x.type === 'year' && x.period === curYear() && x.id !== id);
+  openSheet(g ? 'Изменить цель' : 'Новая цель', `<form data-form="goal" class="gtype-${type}">
+    <input type="hidden" name="id" value="${g ? g.id : ''}">
+    <input type="hidden" name="type" value="${type}">
+    <input type="hidden" name="area" value="${area}">
+    <div class="field"><input name="title" placeholder="${type === 'year' ? 'Например: пробежать полумарафон' : 'Например: прочитать 2 книги'}" value="${g ? esc(g.title) : ''}" required maxlength="100" autocomplete="off"></div>
+    <div class="lbl">На какой срок</div>
+    <div class="seg">${[['year', `На ${curYear()} год`], ['month', `На ${MONTHS_N[+curMonth().slice(5) - 1].toLowerCase()}`]].map(([k, l]) => `<button type="button" class="${type === k ? 'on' : ''}" data-act="goalType" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="lbl">Сфера жизни</div>
+    <div class="chips">${AREAS.map(a => `<button type="button" class="chip ${a.id === area ? 'on' : ''}" data-act="pick" data-name="area" data-v="${a.id}">${a.e} ${a.n}</button>`).join('')}</div>
+    ${yG.length ? `<div class="only-month"><div class="lbl">Шаг к цели года (необязательно)</div>
+      <select name="parent" class="sel"><option value="">— сама по себе —</option>${yG.map(x => `<option value="${x.id}" ${g && g.parent === x.id ? 'selected' : ''}>${areaOf(x.area).e} ${esc(x.title)}</option>`).join('')}</select></div>` : ''}
+    <button class="btn">${g ? 'Сохранить' : 'Поставить цель'}</button>
+    ${g ? `<button type="button" class="btn ghost" data-act="delGoal" data-id="${g.id}">Удалить цель</button>` : ''}
+  </form>`);
+  if (!g) focusLater('[name=title]');
+}
+
+/* ---------- колесо баланса ---------- */
+function wheelSvg(scores, prev) {
+  const C = 150, R = 104, n = AREAS.length, step = 360 / n;
+  const pt = (deg, r) => { const a = deg * Math.PI / 180; return [(C + r * Math.cos(a)).toFixed(1), (C + r * Math.sin(a)).toFixed(1)]; };
+  const sector = (i, r) => { const a0 = i * step - 90 - step / 2, a1 = a0 + step; const [x0, y0] = pt(a0, r), [x1, y1] = pt(a1, r); return `M${C} ${C}L${x0} ${y0}A${r} ${r} 0 0 1 ${x1} ${y1}Z`; };
+  let s = `<svg viewBox="0 0 300 300" class="wheel">`;
+  for (let k = 2; k <= 10; k += 2) s += `<circle cx="${C}" cy="${C}" r="${R * k / 10}" class="wgrid"/>`;
+  AREAS.forEach((a, i) => { s += `<path d="${sector(i, R)}" class="wsec-bg"/>`; });
+  AREAS.forEach((a, i) => { const v = scores[a.id] || 0; s += `<path d="${sector(i, R * v / 10)}" fill="${a.c}" opacity=".85"/>`; });
+  if (prev) AREAS.forEach((a, i) => { const v = prev[a.id] || 0; s += `<path d="${sector(i, R * v / 10)}" class="wprev"/>`; });
+  AREAS.forEach((a, i) => {
+    const mid = i * step - 90;
+    const [lx, ly] = pt(mid, R + 24);
+    s += `<text x="${lx}" y="${ly}" class="wemo" text-anchor="middle" dominant-baseline="central">${a.e}</text>`;
+    const v = scores[a.id] || 0, [vx, vy] = pt(mid, Math.max(R * v / 10 - 13, 26));
+    s += `<text x="${vx}" y="${vy}" class="wval" text-anchor="middle" dominant-baseline="central">${v}</text>`;
+  });
+  const avg = AREAS.reduce((x, a) => x + (scores[a.id] || 0), 0) / n;
+  s += `<circle cx="${C}" cy="${C}" r="17" class="wcenter"/><text x="${C}" y="${C}" class="wavg" text-anchor="middle" dominant-baseline="central">${avg.toFixed(1)}</text>`;
+  return s + '</svg>';
+}
+const wheelAvg = sc => AREAS.reduce((x, a) => x + (sc[a.id] || 0), 0) / AREAS.length;
+function viewWheel() {
+  const last = S.wheel[S.wheel.length - 1], prev = S.wheel[S.wheel.length - 2];
+  if (!ui.wheelDraft) ui.wheelDraft = last ? { ...last.s } : Object.fromEntries(AREAS.map(a => [a.id, 5]));
+  const d = ui.wheelDraft;
+  const weak = [...AREAS].sort((a, b) => (d[a.id] || 0) - (d[b.id] || 0)).slice(0, 2);
+  const delta = last && prev ? wheelAvg(last.s) - wheelAvg(prev.s) : null;
+  return `<div class="card wheelcard">
+      <div id="wheelBox">${wheelSvg(d, last ? last.s : null)}</div>
+      <div class="meta" style="text-align:center">${last ? `Последняя оценка: ${fmtDate(last.d).toLowerCase()} · средний балл ${wheelAvg(last.s).toFixed(1)}${delta !== null ? ` (${delta >= 0 ? '+' : ''}${delta.toFixed(1)})` : ''}` : 'Оцени каждую сферу жизни от 1 до 10 — честно, без идеала'}</div>
+      ${last ? '<div class="legend" style="justify-content:center;margin-top:6px"><span><i style="border:1.5px dashed var(--ink2)"></i> прошлая оценка</span></div>' : ''}
+    </div>
+    <div class="card">${AREAS.map(a => `<div class="wrow">
+      <span class="wname">${a.e} ${a.n}</span>
+      <input type="range" min="1" max="10" step="1" value="${d[a.id] || 5}" data-wheel="${a.id}" style="--c:${a.c}" aria-label="${a.n}">
+      <b id="wv-${a.id}">${d[a.id] || 5}</b></div>`).join('')}
+      <button type="button" class="btn" data-act="saveWheel">Сохранить оценку · +20 XP</button>
+      <div class="meta" style="text-align:center;margin-top:6px">Опыт дают раз в неделю. Удобно пересматривать колесо раз в месяц</div>
+    </div>
+    <div class="card note-soft"><b>Где не хватает баланса</b>
+      <div class="meta" style="margin:4px 0 8px">Самые низкие сферы — хорошее место для цели месяца</div>
+      ${weak.map(a => `<button type="button" class="chip" data-act="goalFromArea" data-v="${a.id}">${a.e} ${a.n} · ${d[a.id]} → поставить цель</button>`).join(' ')}</div>
+    ${S.wheel.length ? `<div class="sec"><span class="tape">История</span></div><div class="list">${S.wheel.slice(-6).reverse().map(w => `<div class="row">
+      <div class="grow">${fmtDate(w.d)}</div><span class="meta">${AREAS.map(a => a.e + (w.s[a.id] || 0)).join(' ')}</span><b style="margin-left:8px">${wheelAvg(w.s).toFixed(1)}</b></div>`).join('')}</div>` : ''}`;
+}
+
 /* ================= render ================= */
 const ICONS = {
   camp: '<path d="M3 20.5h18M12 3.5 3.8 20.5M12 3.5l8.2 17M12 12.5l-3.2 8M12 12.5l3.2 8"/>',
@@ -1249,8 +1471,9 @@ const ICONS = {
   habits: '<path d="M12 21.5c4 0 7-2.9 7-6.8 0-3-1.8-5.3-3.4-6.8-.4 1.8-1.4 2.9-2.8 3.4C13.2 8 12 5 9.2 2.5 9.2 6.5 5 9 5 14.7c0 3.9 3 6.8 7 6.8z"/>',
   hero: '<path d="M12 3 20 6v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z"/><path d="m9 12 2 2 4-4"/>',
   stats: '<path d="M4 20V11M10 20V5M16 20v-6M21.5 20h-19"/>',
+  goals: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
 };
-const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['hero', 'Герой'], ['stats', 'Хроники']];
+const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['hero', 'Герой'], ['stats', 'Хроники']];
 const app = document.getElementById('app');
 const fab = document.getElementById('fab');
 const tabbar = document.getElementById('tabbar');
@@ -1265,10 +1488,10 @@ function render() {
   document.body.classList.remove('onboarding');
   tabbar.classList.remove('hidden');
   const g = game();
-  app.innerHTML = ({ camp: viewCamp, tasks: viewTasks, habits: viewHabits, hero: viewHero, stats: viewStats })[ui.tab](g);
+  app.innerHTML = ({ camp: viewCamp, tasks: viewTasks, habits: viewHabits, goals: viewGoals, hero: viewHero, stats: viewStats })[ui.tab](g);
   tabbar.innerHTML = TABS.map(([k, l]) =>
     `<button type="button" class="tab ${ui.tab === k ? 'on' : ''}" data-act="tab" data-v="${k}"><svg viewBox="0 0 24 24">${ICONS[k]}</svg>${l}</button>`).join('');
-  fab.classList.toggle('hidden', ui.tab === 'stats' || ui.tab === 'hero');
+  fab.classList.toggle('hidden', ui.tab === 'stats' || ui.tab === 'hero' || ui.tab === 'goals');
 }
 
 /* ================= sheets ================= */
@@ -1293,9 +1516,12 @@ function closeSheet(instant) {
 }
 const focusLater = sel => setTimeout(() => { const i = sheetEl && sheetEl.querySelector(sel); i && i.focus(); }, 320);
 
-function taskSheet(id, presetDue) {
+function taskSheet(id, presetDue, presetGoal) {
   const t = id ? S.tasks.find(x => x.id === id) : null;
   const T = today();
+  const goalId = t ? (t.goalId || '') : (presetGoal || '');
+  if (!presetGoal) ui.returnGoal = null;
+  const goals = S.goals.filter(g => !g.done || g.id === goalId);
   const due = t ? (t.due || '') : (presetDue ?? T);
   const prio = t ? (t.prio || 0) : 0;
   const dueChips = [[T, 'Сегодня'], [addDays(T, 1), 'Завтра'], [addDays(T, 7 - wd(T)), 'След. неделя'], ['', 'Без даты']];
@@ -1310,6 +1536,8 @@ function taskSheet(id, presetDue) {
     <div class="lbl">Время (необязательно)</div>
     <div class="chips timechips"><input type="time" name="time" value="${t && t.time ? t.time : ''}"> <span class="meta">—</span> <input type="time" name="timeEnd" value="${t && t.timeEnd ? t.timeEnd : ''}">
       <button type="button" class="chip" data-act="clearTime">Без времени</button></div>
+    ${goals.length ? `<div class="lbl">К какой цели ведёт</div>
+    <select name="goalId" class="sel"><option value="">— без цели —</option>${goals.map(g => `<option value="${g.id}" ${g.id === goalId ? 'selected' : ''}>${areaOf(g.area).e} ${esc(g.title)}</option>`).join('')}</select>` : ''}
     <div class="lbl">Сложность — от неё зависит награда</div>
     <div class="chips">${[[0, 'Обычная · 10 XP'], [1, '🟠 Средняя · 15 XP'], [2, '🔴 Эпичная · 25 XP']].map(([v, l]) => `<button type="button" class="chip ${prio === v ? 'on' : ''}" data-act="pick" data-name="prio" data-v="${v}">${l}</button>`).join('')}</div>
     <button class="btn">${t ? 'Сохранить' : 'Добавить'}</button>
@@ -1451,6 +1679,8 @@ function refreshSheets() {
   const db = document.getElementById('dayBody'); if (db) db.innerHTML = dayBody(db.dataset.day);
   const hb = document.getElementById('habitBody');
   if (hb) { const h = S.habits.find(x => x.id === hb.dataset.id); if (h) hb.innerHTML = habitStatBody(h); }
+  const gb = document.getElementById('goalBody');
+  if (gb) { const g = S.goals.find(x => x.id === gb.dataset.id); if (g) gb.innerHTML = goalBody(g); }
 }
 
 function rewardSheet(id) {
@@ -1532,6 +1762,74 @@ const A = {
     const t = S.tasks.find(x => x.id === d.id); if (!t) return;
     change(ev, () => { t.done = !t.done; t.doneAt = t.done ? today() : null; t.doneTs = t.done ? Date.now() : null; });
     t.done ? haptic.ok() : haptic.tap();
+    refreshSheets();
+  },
+  goalMode(d) { ui.goalMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
+  newGoal(d) { goalEditSheet(null, d.v); },
+  editGoal(d) { goalEditSheet(d.id); },
+  goalSheet(d) { haptic.sel(); goalSheet(d.id); },
+  goalFromArea(d) { goalEditSheet(null, 'month', d.v); },
+  goalType(d, el) {
+    const f = el.closest('form'); f.elements.type.value = d.v;
+    f.classList.remove('gtype-year', 'gtype-month'); f.classList.add('gtype-' + d.v);
+    el.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); haptic.sel();
+  },
+  taskForGoal(d) { ui.returnGoal = d.id; taskSheet(null, today(), d.id); },
+  toggleStep(d, el, ev) {
+    const g = S.goals.find(x => x.id === d.id); const st = g && g.steps.find(s => s.id === d.step); if (!st) return;
+    change(ev, () => { st.done = !st.done; st.doneAt = st.done ? today() : null; });
+    st.done ? haptic.ok() : haptic.tap(); refreshSheets();
+  },
+  delStep(d) {
+    const g = S.goals.find(x => x.id === d.id); if (!g) return;
+    change(null, () => { g.steps = g.steps.filter(s => s.id !== d.step); }); refreshSheets();
+  },
+  completeGoal(d, el, ev) {
+    const g = S.goals.find(x => x.id === d.id); if (!g) return;
+    change(ev, () => { g.done = !g.done; g.doneAt = g.done ? today() : null; });
+    refreshSheets();
+    if (g.done) {
+      haptic.heavy(); confetti(120);
+      const r = GOAL_REWARD[g.type];
+      modal(`<div class="big">🏆</div><div class="kick">ЦЕЛЬ ДОСТИГНУТА</div><h2>${esc(g.title)}</h2>
+        <div class="meta">Это победа! Отметь её чем-нибудь приятным из лавки 🎁</div>
+        <div class="rewards"><span style="color:var(--xp)">+${r.xp} XP</span><span style="color:var(--gold)">+${r.gold} 💰</span></div>`);
+    }
+  },
+  async delGoal(d) {
+    if (!(await ask('Удалить цель? Задачи останутся, просто без привязки.'))) return;
+    S.tasks.forEach(t => { if (t.goalId === d.id) t.goalId = null; });
+    S.goals.forEach(g => { if (g.parent === d.id) g.parent = null; });
+    S.goals = S.goals.filter(g => g.id !== d.id); save(); closeSheet(); render();
+  },
+  moveOldGoals() {
+    const m = curMonth();
+    S.goals.forEach(g => { if (g.type === 'month' && g.period < m && !g.done) g.period = m; });
+    save(); render(); haptic.ok(); toast('🌿', 'Цели перенесены', 'Продолжаем в этом месяце — без чувства вины');
+  },
+  toggleFocus(d, el, ev) {
+    const f = (S.weekFocus[weekStart(today())] || []).find(x => x.id === d.id); if (!f) return;
+    f.done = !f.done; f.done ? haptic.ok() : haptic.tap(); save(); render();
+    if (f.done) floatText(ev.clientX, ev.clientY - 14, '✨ Фокус!', '');
+  },
+  delFocus(d) {
+    const wk = weekStart(today());
+    S.weekFocus[wk] = (S.weekFocus[wk] || []).filter(x => x.id !== d.id); save(); render();
+  },
+  saveWheel(d, el, ev) {
+    const draft = { ...ui.wheelDraft };
+    change(ev, () => {
+      const T = today(), i = S.wheel.findIndex(w => w.d === T);
+      if (i >= 0) S.wheel[i] = { d: T, s: draft }; else S.wheel.push({ d: T, s: draft });
+      S.wheel = S.wheel.slice(-52);
+      ui.wheelDraft = null;
+    });
+    haptic.ok(); toast('🎡', 'Колесо сохранено', `Средний балл ${wheelAvg(draft).toFixed(1)} · загляни снова через месяц`);
+  },
+  moveOverdue() {
+    const T = today();
+    change(null, () => { S.tasks.forEach(t => { if (!t.done && t.due && t.due < T) t.due = T; }); });
+    haptic.ok(); toast('🌿', 'Хвосты перенесены на сегодня', 'Это не провал — просто корректировка плана');
   },
   toggleHabit(d, el, ev) {
     const h = S.habits.find(x => x.id === d.id); if (!h) return;
@@ -1547,7 +1845,11 @@ const A = {
   dayInfo(d) { haptic.sel(); daySheet(d.day); },
   habitStats(d) { haptic.sel(); habitStatsSheet(d.id); },
   calMonth(d) { ui.calOff = Math.min(0, (ui.calOff || 0) + +d.v); haptic.sel(); refreshSheets(); },
-  goTasks(d) { ui.tab = 'tasks'; ui.taskFilter = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
+  goTasks(d) {
+    ui.tab = 'tasks';
+    if (d.v === 'cal') { ui.taskMode = 'cal'; ui.calDay = today(); } else { ui.taskMode = 'list'; ui.taskFilter = d.v; }
+    haptic.sel(); render(); window.scrollTo(0, 0);
+  },
   dayHabit(d, el, ev) {
     const h = S.habits.find(x => x.id === d.id); if (!h) return;
     change(ev, () => {
@@ -1638,13 +1940,40 @@ const F = {
     const e = f.elements;
     const title = e.title.value.trim(); if (!title) return;
     const time = e.time.value || null;
-    const data = { title, note: e.note.value.trim(), due: e.due.value || null, prio: +e.prio.value || 0, time, timeEnd: time && e.timeEnd.value > time ? e.timeEnd.value : null };
+    const data = { title, note: e.note.value.trim(), due: e.due.value || null, prio: +e.prio.value || 0, time, timeEnd: time && e.timeEnd.value > time ? e.timeEnd.value : null, goalId: e.goalId ? e.goalId.value || null : null };
+    const back = ui.returnGoal; ui.returnGoal = null;
     closeSheet();
     change(null, () => {
       if (e.id.value) Object.assign(S.tasks.find(t => t.id === e.id.value), data);
       else S.tasks.push({ id: uid(), ...data, done: false, doneAt: null, created: Date.now() });
     });
     haptic.ok();
+    if (back) setTimeout(() => goalSheet(back), 320); // вернуться в карточку цели
+  },
+  goal(f) {
+    const e = f.elements;
+    const title = e.title.value.trim(); if (!title) return;
+    const type = e.type.value === 'year' ? 'year' : 'month';
+    const data = { title, type, area: e.area.value, period: type === 'year' ? curYear() : curMonth(), parent: type === 'month' && e.parent ? e.parent.value || null : null };
+    let id = e.id.value;
+    if (id) Object.assign(S.goals.find(g => g.id === id), data);
+    else { id = uid(); S.goals.push({ id, ...data, steps: [], done: false, doneAt: null, created: Date.now() }); }
+    haptic.ok(); save(); closeSheet(); render();
+    setTimeout(() => goalSheet(id), 320);
+  },
+  step(f) {
+    const g = S.goals.find(x => x.id === f.dataset.id); const text = f.elements.text.value.trim();
+    if (!g || !text) return;
+    g.steps.push({ id: uid(), text, done: false, doneAt: null });
+    haptic.tap(); save(); render(); refreshSheets();
+    const inp = document.querySelector('#goalBody [data-form="step"] [name=text]'); inp && inp.focus();
+  },
+  focus(f) {
+    const text = f.elements.text.value.trim(); if (!text) return;
+    const wk = weekStart(today());
+    S.weekFocus = { [wk]: [...(S.weekFocus[wk] || []), { id: uid(), text, done: false }].slice(0, 3) };
+    haptic.tap(); save(); render();
+    const inp = app.querySelector('[data-form="focus"] [name=text]'); inp && inp.focus();
   },
   habit(f) {
     const e = f.elements;
@@ -1686,6 +2015,16 @@ document.addEventListener('submit', e => {
   fn && fn(e.target);
 });
 document.addEventListener('input', e => {
+  // ползунки колеса баланса: перерисовываем колесо на лету
+  if (e.target.dataset.wheel) {
+    const id = e.target.dataset.wheel, v = +e.target.value;
+    ui.wheelDraft[id] = v;
+    const lbl = document.getElementById('wv-' + id); if (lbl) lbl.textContent = v;
+    const last = S.wheel[S.wheel.length - 1];
+    const box = document.getElementById('wheelBox'); if (box) box.innerHTML = wheelSvg(ui.wheelDraft, last ? last.s : null);
+    haptic.sel();
+    return;
+  }
   if (e.target.dataset.sync === 'due') {
     const v = e.target.value;
     e.target.closest('form').querySelectorAll('[data-name="due"]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
@@ -1733,6 +2072,24 @@ function seed() {
     const win = k % 3 !== 0;
     S.bosses[w] = { hp: Math.max(150, Math.round(dmg * (win ? .85 : 1.25) / 10) * 10), idx: Math.round(parse(w).getTime() / (7 * 864e5)) % BOSSES.length, claimed: win, reward: win ? { xp: 120, gold: 60 } : undefined };
   }
+  // цели, фокус недели и колесо баланса
+  const Y = T.slice(0, 4), M = T.slice(0, 7);
+  const goal = (title, type, area, steps, extra = {}) => {
+    const g = { id: uid(), title, type, area, period: type === 'year' ? Y : M, parent: null, steps: steps.map(([text, done]) => ({ id: uid(), text, done, doneAt: done ? addDays(T, -Math.floor(rnd() * 20) - 1) : null })), done: false, doneAt: null, created: Date.now(), ...extra };
+    S.goals.push(g); return g;
+  };
+  const run = goal('Пробежать полумарафон 🏃', 'year', 'health', [['Бегать 3 раза в неделю', true], ['Пробежать 10 км', true], ['Пробежать 15 км', false], ['Записаться на забег', false]]);
+  const eng = goal('Английский до уровня B2', 'year', 'growth', [['Найти преподавателя', true], ['Сдать пробный тест', false]]);
+  goal('Финансовая подушка на 3 месяца', 'year', 'money', [['Посчитать расходы', true], ['Откладывать 15% дохода', false]]);
+  goal('Пробежать 10 км без остановки', 'month', 'health', [['5 км', true], ['8 км', true], ['10 км', false]], { parent: run.id });
+  goal('Прочитать 2 книги на английском', 'month', 'growth', [['Книга 1', true], ['Книга 2', false]], { parent: eng.id });
+  goal('Навести порядок дома', 'month', 'family', [['Разобрать шкаф', true], ['Балкон', true], ['Кладовка', true]], { done: true, doneAt: addDays(T, -2) });
+  S.tasks.filter(t => t.title.startsWith('Сходить в спортзал')).forEach(t => { t.goalId = run.id; });
+  S.weekFocus = { [weekStart(T)]: [{ id: uid(), text: 'Сдать отчёт по проекту', done: false }, { id: uid(), text: 'Две пробежки', done: true }] };
+  S.wheel = [
+    { d: addDays(T, -35), s: { health: 5, career: 7, money: 4, love: 6, family: 7, growth: 5, fun: 4, soul: 5 } },
+    { d: addDays(T, -6), s: { health: 7, career: 7, money: 5, love: 7, family: 8, growth: 6, fun: 5, soul: 6 } },
+  ];
   // пара пройденных квестов и покупка
   for (let i = 1; i <= 12; i++) S.claims[addDays(T, -i) + ':tasks3'] = { xp: 30, gold: 12, d: addDays(T, -i) };
   S.purchases.push({ rid: S.rewards[0].id, emoji: S.rewards[0].emoji, title: S.rewards[0].title, cost: S.rewards[0].cost, ts: Date.now() - 864e5 * 3 });
