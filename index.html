@@ -410,9 +410,6 @@ input:not([type=range]):not([type=checkbox]),textarea{color:var(--ink);-webkit-t
 .field:focus-within{box-shadow:0 0 0 2px var(--pink),var(--shadow)!important;background:#fff}
 .quick:focus-within{background:#fff;box-shadow:inset 0 0 0 2px var(--pink)}
 .fin-in-row input:focus,.numin:focus,.sel:focus,.timechips input:focus,.chips input[type=date]:focus{outline:none;box-shadow:0 0 0 2px var(--rose);background:#fff}
-/* при открытой клавиатуре шторка поднимается над ней (--kb выставляет скрипт) */
-.sheet-wrap{bottom:var(--kb,0px);top:auto;height:calc(var(--vvh,100vh) - 0px)}
-.sheet{max-height:calc(var(--vvh,100vh) - var(--top) - 12px)}
 /* редактирование героя */
 .hn{flex-wrap:wrap}
 .hedit-btn{border:1px solid var(--line)!important;background:var(--paper2)!important;border-radius:14px;padding:4px 10px!important;font-family:'Nunito',sans-serif;font-size:12.5px!important;font-weight:700;color:var(--ink2)!important;line-height:1.2;min-height:30px}
@@ -684,7 +681,7 @@ form.gtype-year .only-month{display:none}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-24.3';
+const APP_VERSION = '2026-11-24.4';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -2840,23 +2837,6 @@ document.addEventListener('click', e => {
   const fn = A[el.dataset.act];
   if (fn) { e.preventDefault(); fn(el.dataset, el, e); }
 });
-// Клавиатура: высота видимой области и отступ снизу → CSS-переменные; активное поле — в центр экрана
-(() => {
-  const vv = window.visualViewport;
-  const sync = () => {
-    if (!vv) return;
-    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    document.documentElement.style.setProperty('--kb', kb + 'px');
-    document.documentElement.style.setProperty('--vvh', vv.height + 'px');
-  };
-  if (vv) { vv.addEventListener('resize', sync); vv.addEventListener('scroll', sync); sync(); }
-  document.addEventListener('focusin', e => {
-    const el = e.target;
-    if (!el.matches || !el.matches('input:not([type=range]):not([type=checkbox]), textarea')) return;
-    setTimeout(() => { sync(); safe(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' })); }, 320);
-  });
-  document.addEventListener('focusout', () => setTimeout(sync, 200));
-})();
 document.addEventListener('submit', e => {
   e.preventDefault();
   const fn = F[e.target.dataset.form];
