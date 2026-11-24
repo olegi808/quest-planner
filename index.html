@@ -448,6 +448,28 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .wk-head>button:not(.chip){border:0;background:var(--field);width:32px;height:32px;border-radius:50%;font-size:20px;line-height:1;padding:0 0 2px;flex:none}
 .wk-head .chip{padding:2px 10px;font-family:var(--hand);font-size:18px;background:var(--pink2)}
 .wk-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+/* раскрытый месяц и выбор месяца/года */
+.wk-head b.tap{cursor:pointer}
+.wk-head b small{font-family:'Nunito',sans-serif;font-size:12px;color:var(--ink2);vertical-align:middle}
+.wk-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.wk-foot .chip{padding:2px 12px;font-family:var(--hand);font-size:18px;background:var(--pink2);border-color:transparent}
+.wk-toggle{border:0;background:none;font-family:var(--hand);font-size:19px;font-weight:700;color:var(--rose);padding:2px 4px}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mwd{text-align:center;font-size:11.5px;font-weight:700;color:var(--ink2);padding-bottom:2px}
+.mday{border:0;background:var(--paper);border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;transition:background .15s}
+.mday b{font-size:15px;font-weight:600}
+.mday i{width:5px;height:5px;border-radius:50%}
+.mday i.dot{background:var(--rose)}.mday i.ok{background:var(--ok)}
+.mday.other{opacity:.35}
+.mday.today b{color:var(--rose)}
+.mday.today{box-shadow:inset 0 0 0 1.5px var(--pink)}
+.mday.on{background:var(--pink)}
+.mday.on b{color:var(--ink)}
+.mpick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mpick button{border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:12px 4px;font-family:var(--hand);font-size:20px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:1px}
+.mpick button small{font-family:'Nunito',sans-serif;font-size:10.5px;font-weight:600;color:var(--ink2)}
+.mpick button.now{border-color:var(--rose)}
+.mpick button.on{background:var(--pink);border-color:transparent}
 .wkd{border:0;background:var(--paper);border-radius:12px;padding:8px 0 6px;display:flex;flex-direction:column;align-items:center;gap:1px;box-shadow:0 3px 8px -4px rgba(120,80,85,.4);transition:transform .15s,background .15s}
 .wkd span{font-size:11.5px;font-weight:700;color:var(--ink2)}
 .wkd b{font-size:18px;font-weight:600}
@@ -490,6 +512,7 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .principles{background:#eef1e8!important;margin-top:24px}
 .principles li{margin:4px 0}
 .move-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-2px 2px 14px}
+.move-row .chip{white-space:nowrap;flex:none}
 .sel{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;font-size:15px;-webkit-appearance:none;appearance:none}
 form.gtype-year .only-month{display:none}
 /* колесо баланса в стиле конспекта */
@@ -1204,23 +1227,54 @@ function viewCalendar() {
   const ws = weekStart(sel);
   const week = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
   const md = parse(sel);
-  const strip = week.map(s => {
-    const ts = S.tasks.filter(t => t.due === s);
-    const dot = !ts.length ? '' : ts.every(t => t.done) ? 'ok' : 'dot';
-    return `<button type="button" class="wkd ${s === sel ? 'on' : ''} ${s === T ? 'today' : ''}" data-act="calDay" data-day="${s}">
-      <span>${WD[wd(s)]}</span><b>${parse(s).getDate()}</b><i class="${dot}"></i></button>`;
-  }).join('');
+  const dotOf = s => { const ts = S.tasks.filter(t => t.due === s); return !ts.length ? '' : ts.every(t => t.done) ? 'ok' : 'dot'; };
+  const strip = week.map(s => `<button type="button" class="wkd ${s === sel ? 'on' : ''} ${s === T ? 'today' : ''}" data-act="calDay" data-day="${s}">
+      <span>${WD[wd(s)]}</span><b>${parse(s).getDate()}</b><i class="${dotOf(s)}"></i></button>`).join('');
+
+  // Раскрытый календарь: полный месяц (ui.calView = 'YYYY-MM') или выбор месяца и года
+  const view = ui.calView || sel.slice(0, 7);
+  const [vy, vm] = view.split('-').map(Number);
+  let head, body;
+  if (ui.calOpen && ui.calPick) {
+    const py = ui.calYear || vy;
+    head = `<button type="button" data-act="calYearNav" data-v="-1" aria-label="Прошлый год">‹</button>
+      <b class="tap" data-act="calTitle">${py}</b>
+      <button type="button" data-act="calYearNav" data-v="1" aria-label="Следующий год">›</button>`;
+    body = `<div class="mpick">${MONTHS_N.map((n, i) => {
+      const key = `${py}-${pad(i + 1)}`;
+      const cnt = S.tasks.filter(t => t.due && t.due.startsWith(key)).length;
+      return `<button type="button" class="${key === view ? 'on' : ''} ${key === T.slice(0, 7) ? 'now' : ''}" data-act="calPickMonth" data-v="${key}">${n}${cnt ? `<small>${cnt} ${plural(cnt, 'задача', 'задачи', 'задач')}</small>` : ''}</button>`;
+    }).join('')}</div>`;
+  } else if (ui.calOpen) {
+    const first = `${view}-01`, last = ymd(new Date(vy, vm, 0));
+    const start = weekStart(first), end = addDays(weekStart(last), 6);
+    let cells = WD.map(w => `<div class="mwd">${w}</div>`).join('');
+    for (let s = start; s <= end; s = addDays(s, 1)) {
+      cells += `<button type="button" class="mday ${s.slice(0, 7) !== view ? 'other' : ''} ${s === sel ? 'on' : ''} ${s === T ? 'today' : ''}" data-act="calDay" data-day="${s}">
+        <b>${parse(s).getDate()}</b><i class="${dotOf(s)}"></i></button>`;
+    }
+    head = `<button type="button" data-act="calMonthNav" data-v="-1" aria-label="Прошлый месяц">‹</button>
+      <b class="tap" data-act="calTitle">${MONTHS_N[vm - 1]} ${vy} <small>▾</small></b>
+      <button type="button" data-act="calMonthNav" data-v="1" aria-label="Следующий месяц">›</button>`;
+    body = `<div class="mgrid">${cells}</div>`;
+  } else {
+    head = `<button type="button" data-act="calWeek" data-v="-7" aria-label="Прошлая неделя">‹</button>
+      <b class="tap" data-act="calTitle">${MONTHS_N[md.getMonth()]} ${md.getFullYear()}</b>
+      <button type="button" data-act="calWeek" data-v="7" aria-label="Следующая неделя">›</button>`;
+    body = `<div class="wk-days">${strip}</div>`;
+  }
   const dayTasks = S.tasks.filter(t => t.due === sel);
   const timed = dayTasks.filter(t => t.time).sort((a, b) => a.time.localeCompare(b.time));
   const untimed = dayTasks.filter(t => !t.time).sort((a, b) => (a.done - b.done) || byPrio(a, b));
   const overdue = sel === T ? S.tasks.filter(t => !t.done && t.due && t.due < T).sort(byPrio) : [];
   const done = dayTasks.filter(t => t.done).length;
-  return `<div class="wk">
-      <div class="wk-head"><button type="button" data-act="calWeek" data-v="-7" aria-label="Прошлая неделя">‹</button>
-        <b>${MONTHS_N[md.getMonth()]} ${md.getFullYear()}</b>
-        ${sel !== T ? `<button type="button" class="chip" data-act="calDay" data-day="${T}">сегодня</button>` : ''}
-        <button type="button" data-act="calWeek" data-v="7" aria-label="Следующая неделя">›</button></div>
-      <div class="wk-days">${strip}</div>
+  return `<div class="wk ${ui.calOpen ? 'open' : ''}">
+      <div class="wk-head">${head}</div>
+      ${body}
+      <div class="wk-foot">
+        ${sel !== T || (ui.calOpen && view !== T.slice(0, 7)) ? `<button type="button" class="chip" data-act="calToday">сегодня</button>` : '<span></span>'}
+        <button type="button" class="wk-toggle" data-act="calToggle">${ui.calOpen ? 'Свернуть ▴' : 'Весь месяц ▾'}</button>
+      </div>
     </div>
     <div class="sec"><span class="tape">${sel === T ? 'Сегодня' : fmtDate(sel)}</span>${dayTasks.length ? `<span class="r">${done}/${dayTasks.length} готово</span>` : ''}</div>
     ${dayTasks.filter(t => !t.done).length > 7 ? `<div class="card note-soft">🌿 На этот день ${dayTasks.filter(t => !t.done).length} ${plural(dayTasks.filter(t => !t.done).length, 'задача', 'задачи', 'задач')}. Лучше выполнить 7 и почувствовать прогресс, чем 25 и устать от вины — часть можно перенести.</div>` : ''}
@@ -1886,8 +1940,27 @@ const A = {
     taskSheet(null, ui.tab === 'tasks' && ui.taskFilter === 'all' ? '' : today());
   },
   taskMode(d) { ui.taskMode = d.v; haptic.sel(); render(); },
-  calDay(d) { ui.calDay = d.day; haptic.sel(); render(); },
+  calDay(d) { ui.calDay = d.day; ui.calView = d.day.slice(0, 7); haptic.sel(); render(); },
   calWeek(d) { ui.calDay = addDays(ui.calDay || today(), +d.v); haptic.sel(); render(); },
+  calToday() { ui.calDay = today(); ui.calView = today().slice(0, 7); ui.calPick = false; haptic.sel(); render(); },
+  calToggle() { ui.calOpen = !ui.calOpen; ui.calPick = false; ui.calView = (ui.calDay || today()).slice(0, 7); haptic.sel(); render(); },
+  calTitle() {
+    if (!ui.calOpen) { ui.calOpen = true; ui.calView = (ui.calDay || today()).slice(0, 7); }
+    else { ui.calPick = !ui.calPick; ui.calYear = +(ui.calView || today()).slice(0, 4); }
+    haptic.sel(); render();
+  },
+  calMonthNav(d) {
+    const [y, m] = (ui.calView || (ui.calDay || today()).slice(0, 7)).split('-').map(Number);
+    const nd = new Date(y, m - 1 + +d.v, 1);
+    ui.calView = `${nd.getFullYear()}-${pad(nd.getMonth() + 1)}`; haptic.sel(); render();
+  },
+  calYearNav(d) { ui.calYear = (ui.calYear || +today().slice(0, 4)) + +d.v; haptic.sel(); render(); },
+  calPickMonth(d) {
+    ui.calView = d.v; ui.calPick = false;
+    // выбираем 1-е число месяца (или сегодня, если это текущий месяц), чтобы ниже сразу были задачи
+    ui.calDay = d.v === today().slice(0, 7) ? today() : d.v + '-01';
+    haptic.sel(); render();
+  },
   clearTime(d, el) { const f = el.closest('form'); f.elements.time.value = ''; f.elements.timeEnd.value = ''; haptic.sel(); },
   newHabit() { habitSheet(null); },
   editTask(d) { taskSheet(d.id); },
