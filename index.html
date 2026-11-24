@@ -670,6 +670,22 @@ form.gtype-year .only-month{display:none}
 <script>
 (() => {
 'use strict';
+// Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
+const APP_VERSION = '2026-11-24.1';
+// Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
+function checkUpdate() {
+  try {
+    fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.text() : '')
+      .then(t => {
+        const m = t.match(/const APP_VERSION = '([^']+)'/);
+        if (!m || m[1] === APP_VERSION) return;
+        const key = 'reloaded-' + m[1];
+        try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch {}
+        location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]) + location.hash);
+      }).catch(() => {});
+  } catch {}
+}
 const tg = window.Telegram && window.Telegram.WebApp;
 const inTG = !!(tg && tg.initData);
 const ver = v => { try { return inTG && tg.isVersionAtLeast(v); } catch { return false; } };
@@ -2857,6 +2873,7 @@ async function boot() {
       tg.checkHomeScreenStatus(st => { ui.home = st; render(); });
     });
   }
+  checkUpdate();
   await load();
   if (S.hero) {
     settleOldBosses();
