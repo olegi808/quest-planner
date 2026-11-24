@@ -734,7 +734,7 @@ html[data-theme=dark] .asc{border-left-color:#c97c8a}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-24.6';
+const APP_VERSION = '2026-11-24.7';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -793,7 +793,9 @@ const ask = msg => new Promise(res => {
 const EMOJIS = ['💧','🏃','📚','🧘','💪','🥗','😴','🚭','💊','✍️','🎯','🧹','🎸','🌱','☀️','🦷','🚶','🍎','🧠','💰','📵','🙏','🎨','❤️'];
 const OLD_COLORS = ['#2f80ed','#34c759','#ff9500','#ff3b30','#af52de','#32ade6','#ffcc00','#ff2d55'];
 const COLORS = ['#e39aa6','#9fbb98','#e2b67f','#b49ccd','#94bcd3','#d4a98e','#c48d9c','#a3b4c8'];
-const AVATARS = ['🧙','🧝','🦸','🧛','🧚','🤴','👸','🦊','🐺','🦁','🐱','🐲'];
+const AVATARS = ['🐱','🐰','🦊','🐻','🐼','🐨','🦔','🐹','🐸','🐣','🦋','🐝','🌸','🌷','🍓','🧸','🌙','☁️'];
+// старые «сказочные» аватары → новые милые
+const OLD_AVATARS = { '🧙': '🐱', '🧝': '🦋', '🦸': '🐻', '🧛': '🌙', '🧚': '🌸', '🤴': '🐼', '👸': '🌷', '🐺': '🦔', '🦁': '🐹', '🐲': '🐸' };
 const REWARD_EMOJIS = ['☕','🍰','🎮','🎬','🍕','😴','🛍️','📱','🍿','🎧','🛁','🍣','🎲','📖','🏖️','🎁'];
 // Сферы жизни для колеса баланса и целей
 const AREAS = [
@@ -940,6 +942,7 @@ async function load() {
     S.v = 2;
     // старые яркие цвета привычек → пастельные
     S.habits.forEach(h => { const i = OLD_COLORS.indexOf(h.color); if (i >= 0) h.color = COLORS[i]; });
+    if (S.hero && OLD_AVATARS[S.hero.avatar]) S.hero.avatar = OLD_AVATARS[S.hero.avatar];
   }
 }
 function save() {
