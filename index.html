@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Квест-планер</title>
+<title>Уютный планер</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -734,7 +734,7 @@ html[data-theme=dark] .asc{border-left-color:#c97c8a}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-24.5';
+const APP_VERSION = '2026-11-24.6';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -824,7 +824,7 @@ const BOSSES = [
   { e: '😿', n: 'Кот Хандры', d: 'Зовёт поваляться под пледом весь день' },
   { e: '😸', n: 'Кот-Обжора Дедлайнов', d: 'Съедает всё время до дедлайна' },
 ];
-const TITLES = [[1, 'Новобранец'], [3, 'Странник'], [5, 'Следопыт'], [8, 'Рыцарь'], [12, 'Ветеран'], [16, 'Мастер'], [20, 'Чемпион'], [25, 'Легенда'], [30, 'Мифический герой']];
+const TITLES = [[1, 'Чистый лист'], [3, 'Первые заметки'], [5, 'Любитель списков'], [8, 'Хранитель привычек'], [12, 'Мастер планирования'], [16, 'Гуру порядка'], [20, 'Звезда блокнота'], [25, 'Легенда планера'], [30, 'Мудрый котик']];
 const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
 const levelCost = L => 80 + L * 40;
 function levelInfo(xp) {
@@ -837,8 +837,8 @@ const habitBonus = streakBefore => 6 + Math.min(streakBefore, 14);
 
 // Квесты дня: c = контекст дня
 const QUESTS = {
-  tasks3: { i: '⚔️', t: 'Выполни 3 задачи', target: () => 3, prog: c => c.doneT.length, xp: 30, gold: 12 },
-  tasks5: { i: '🗡️', t: 'Выполни 5 задач', target: () => 5, prog: c => c.doneT.length, xp: 50, gold: 20, need: c => c.open.length >= 4 },
+  tasks3: { i: '✅', t: 'Выполни 3 задачи', target: () => 3, prog: c => c.doneT.length, xp: 30, gold: 12 },
+  tasks5: { i: '📝', t: 'Выполни 5 задач', target: () => 5, prog: c => c.doneT.length, xp: 50, gold: 20, need: c => c.open.length >= 4 },
   hall: { i: '🌿', t: 'Отметь все привычки дня', target: c => c.hT.length, prog: c => c.hDone, xp: 40, gold: 15, need: c => c.hT.length >= 2 },
   h2: { i: '🔮', t: 'Отметь 2 привычки', target: () => 2, prog: c => c.hDone, xp: 20, gold: 8, need: c => c.hT.length >= 2 },
   high: { i: '🔴', t: 'Закрой важную задачу', target: () => 1, prog: c => c.doneT.filter(t => t.prio === 2).length, xp: 35, gold: 15, need: c => c.open.some(t => t.prio === 2) },
@@ -851,27 +851,27 @@ const QUESTS = {
 
 // Наклейки-достижения: s = сводка статистики
 const ACH = [
-  { id: 'first', i: '⚔️', n: 'Первая кровь', d: 'Выполни первую задачу', g: 10, ok: s => s.tasksDone >= 1 },
+  { id: 'first', i: '✅', n: 'Первая галочка', d: 'Выполни первую задачу', g: 10, ok: s => s.tasksDone >= 1 },
   { id: 't25', i: '📜', n: 'Писарь', d: '25 задач', g: 25, ok: s => s.tasksDone >= 25 },
   { id: 't100', i: '🏅', n: 'Сотня', d: '100 задач', g: 60, ok: s => s.tasksDone >= 100 },
-  { id: 't300', i: '👑', n: 'Повелитель дел', d: '300 задач', g: 150, ok: s => s.tasksDone >= 300 },
+  { id: 't300', i: '👑', n: 'Мастер дел', d: '300 задач', g: 150, ok: s => s.tasksDone >= 300 },
   { id: 'r3', i: '🌱', n: 'Садовник', d: '3 привычки в работе', g: 15, ok: s => s.habits >= 3 },
   { id: 's3', i: '🕯️', n: 'Искра', d: 'Серия 3 дня', g: 10, ok: s => s.best >= 3 },
   { id: 's7', i: '🔥', n: 'Пламя', d: 'Серия 7 дней', g: 30, ok: s => s.best >= 7 },
   { id: 's21', i: '☄️', n: 'Привычка выкована', d: 'Серия 21 день', g: 80, ok: s => s.best >= 21 },
   { id: 's50', i: '🌋', n: 'Несгибаемый', d: 'Серия 50 дней', g: 200, ok: s => s.best >= 50 },
-  { id: 'c50', i: '🍃', n: 'Друид', d: '50 отметок привычек', g: 30, ok: s => s.checks >= 50 },
+  { id: 'c50', i: '🍃', n: 'Цветовод', d: '50 отметок привычек', g: 30, ok: s => s.checks >= 50 },
   { id: 'p1', i: '✨', n: 'Идеальный день', d: 'Все привычки дня', g: 15, ok: s => s.perfect >= 1 },
   { id: 'p10', i: '🌟', n: 'Сияние', d: '10 идеальных дней', g: 60, ok: s => s.perfect >= 10 },
-  { id: 'q10', i: '🎯', n: 'Искатель', d: '10 квестов дня', g: 30, ok: s => s.quests >= 10 },
-  { id: 'q50', i: '🗺️', n: 'Странствующий рыцарь', d: '50 квестов дня', g: 100, ok: s => s.quests >= 50 },
+  { id: 'q10', i: '🎯', n: 'Любопытный котик', d: '10 заданий дня', g: 30, ok: s => s.quests >= 10 },
+  { id: 'q50', i: '🗺️', n: 'Неутомимая лапка', d: '50 заданий дня', g: 100, ok: s => s.quests >= 50 },
   { id: 'b1', i: '🐾', n: 'Котоукротитель', d: 'Укроти котобосса недели', g: 50, ok: s => s.bosses >= 1 },
   { id: 'b5', i: '😻', n: 'Кошачий шептун', d: 'Укроти 5 котобоссов', g: 150, ok: s => s.bosses >= 5 },
-  { id: 'l5', i: '⭐', n: 'Подмастерье', d: 'Достигни 5 уровня', g: 30, ok: s => s.level >= 5 },
-  { id: 'l10', i: '💫', n: 'Герой', d: 'Достигни 10 уровня', g: 80, ok: s => s.level >= 10 },
-  { id: 'l20', i: '🌠', n: 'Полубог', d: 'Достигни 20 уровня', g: 200, ok: s => s.level >= 20 },
-  { id: 'buy1', i: '🛍️', n: 'Заслуженный отдых', d: 'Купи награду в лавке', g: 10, ok: s => s.purchases >= 1 },
-  { id: 'rich', i: '🏦', n: 'Казначей', d: 'Накопи 500 золота', g: 50, ok: s => s.gold >= 500 },
+  { id: 'l5', i: '⭐', n: 'Ученик', d: 'Достигни 5 уровня', g: 30, ok: s => s.level >= 5 },
+  { id: 'l10', i: '💫', n: 'Звёздочка', d: 'Достигни 10 уровня', g: 80, ok: s => s.level >= 10 },
+  { id: 'l20', i: '🌠', n: 'Легенда планера', d: 'Достигни 20 уровня', g: 200, ok: s => s.level >= 20 },
+  { id: 'buy1', i: '🛍️', n: 'Заслуженный отдых', d: 'Купи себе награду', g: 10, ok: s => s.purchases >= 1 },
+  { id: 'rich', i: '🏦', n: 'Казначей', d: 'Накопи 500 монеток', g: 50, ok: s => s.gold >= 500 },
   { id: 'goal1', i: '🏹', n: 'В яблочко', d: 'Достигни первой цели', g: 40, ok: s => s.goalsDone >= 1 },
   { id: 'goal5', i: '🗻', n: 'Покоритель вершин', d: 'Достигни 5 целей', g: 120, ok: s => s.goalsDone >= 5 },
   { id: 'wheel1', i: '🎡', n: 'Взгляд на себя', d: 'Заполни колесо баланса', g: 15, ok: s => s.wheels >= 1 },
@@ -1214,7 +1214,7 @@ function fx(b, m, ev, newAch) {
       if (r.bottom > 0 && r.top < innerHeight) floatText(r.left + r.width / 2, r.top + 10, '−' + (m.dmg - b.dmg), 'dmg');
     }
   }
-  if (!b.dead && m.dead) setTimeout(() => { haptic.heavy(); confetti(90); toast('😽', 'Котик укрощён!', 'Забери награду в Лагере'); }, 450);
+  if (!b.dead && m.dead) setTimeout(() => { haptic.heavy(); confetti(90); toast('😽', 'Котик укрощён!', 'Забери награду в «Мой день»'); }, 450);
   if (m.level > b.level) setTimeout(() => levelUpModal(m.level, m.title !== b.title ? m.title : null), 600);
   (newAch || []).forEach((a, i) => setTimeout(() => { haptic.ok(); toast(a.i, 'Новая наклейка: ' + a.n, `${a.d} · +${a.g} 💰`); }, 900 + i * 700));
 }
@@ -1332,21 +1332,21 @@ function viewOnboarding() {
   const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
   return `<div class="onb">
     <div class="onb-hero">🎀</div>
-    <h1>Твоё приключение начинается</h1>
-    <p class="meta">Превращай дела в подвиги. Прокачивай героя, укрощай котобоссов и трать золото на настоящие награды.</p>
+    <h1>Твой уютный планер</h1>
+    <p class="meta">Планируй мягко: дела и привычки приносят опыт и монетки, котики помогают не лениться, а монетки можно потратить на приятное для себя.</p>
     <div class="feat">
-      <div><b>⚔️</b>Задачи дают опыт и золото</div>
+      <div><b>✅</b>Дела приносят опыт и монетки</div>
       <div><b>🔥</b>Серии привычек усиливают награду</div>
       <div><b>🐈</b>Каждую неделю — новый котобосс</div>
-      <div><b>🎁</b>Квесты дня, наклейки и лавка наград</div>
+      <div><b>🎁</b>Задания дня, наклейки и награды</div>
     </div>
     <form data-form="hero">
       <input type="hidden" name="avatar" value="${AVATARS[0]}">
-      <div class="lbl">Выбери героя</div>
+      <div class="lbl">Выбери аватар</div>
       <div class="avatars">${AVATARS.map((a, i) => `<button type="button" class="${i ? '' : 'on'}" data-act="pick" data-name="avatar" data-v="${a}">${a}</button>`).join('')}</div>
-      <div class="lbl">Имя героя</div>
-      <div class="field"><input name="name" value="${esc(user ? user.first_name : '')}" placeholder="Как тебя зовут, странник?" maxlength="24" autocomplete="off" required></div>
-      <button class="btn epic">Начать приключение</button>
+      <div class="lbl">Как тебя зовут?</div>
+      <div class="field"><input name="name" value="${esc(user ? user.first_name : '')}" placeholder="Твоё имя" maxlength="24" autocomplete="off" required></div>
+      <button class="btn epic">Начать планировать</button>
     </form>
   </div>`;
 }
@@ -1358,15 +1358,15 @@ function viewCamp(g) {
   const undone = S.tasks.filter(t => !t.done && t.due && t.due <= T).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : byPrio(a, b)));
   const doneT = c.doneT;
   const qDone = qs.filter(q => q.claimed).length;
-  const tip = !S.tipSeen ? `<div class="card tip"><button type="button" class="x" data-act="dismissTip">×</button><b>📜 Как играть</b><ul>
-      <li>Задача даёт <b>10–25 XP</b> и золото (больше за важные)</li>
+  const tip = !S.tipSeen ? `<div class="card tip"><button type="button" class="x" data-act="dismissTip">×</button><b>📜 Как это работает</b><ul>
+      <li>Задача даёт <b>10–25 XP</b> и монетки (больше за важные)</li>
       <li>Привычка — <b>6 XP + бонус за серию</b> до +14</li>
       <li>Весь опыт за неделю — укрощает <b>котобосса</b></li>
-      <li>Выполняй <b>квесты дня</b> и забирай награду</li>
-      <li>Золото трать в <b>лавке</b> на свои реальные награды</li></ul></div>` : '';
-  const demoCard = looksLikeDemo() ? `<div class="card tip demo-note"><b>🧹 Демо-режим выключен</b><div class="meta" style="margin:4px 0 10px">Похоже, сейчас здесь примерные данные из демо: задачи, привычки, траты. Очистить их и начать свой планер с нуля? Имя и аватар героя останутся.</div><button type="button" class="btn" style="margin-top:0" data-act="clearDemo">Очистить демо-данные</button><button type="button" class="btn alt" data-act="keepData">Нет, это мои данные</button></div>` : '';
+      <li>Выполняй <b>задания дня</b> и забирай награду</li>
+      <li>Монетки трать на <b>награды для себя</b> — свои, настоящие</li></ul></div>` : '';
+  const demoCard = looksLikeDemo() ? `<div class="card tip demo-note"><b>🧹 Демо-режим выключен</b><div class="meta" style="margin:4px 0 10px">Похоже, сейчас здесь примерные данные из демо: задачи, привычки, траты. Очистить их и начать свой планер с нуля? Имя и аватар останутся.</div><button type="button" class="btn" style="margin-top:0" data-act="clearDemo">Очистить демо-данные</button><button type="button" class="btn alt" data-act="keepData">Нет, это мои данные</button></div>` : '';
   return `${heroCard(g)}${demoCard}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
-  <div class="sec"><span class="tape">Квесты дня</span> <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
+  <div class="sec"><span class="tape">Задания дня</span> <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
   ${questList(qs)}
   ${c.hT.length ? `<div class="sec"><span class="tape">Привычки на сегодня</span> <span class="r">${c.hDone}/${c.hT.length}</span></div>
   <div class="pills">${c.hT.map(h => `<button type="button" class="pill ${isDone(h, T) ? 'on' : ''}" style="--c:${h.color}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}"><span class="em">${h.emoji}</span><span class="nm">${esc(h.name)}</span><span class="px">+${nextBonus(h)}</span></button>`).join('')}</div>` : ''}
@@ -1517,7 +1517,7 @@ function viewHabits() {
 
 // Вкладка «Герой»: профиль героя и хроники (статистика) в одном разделе
 function viewHero(g) {
-  const seg = `<div class="seg">${[['hero', '🛡️ Профиль'], ['stats', '📊 Хроники']].map(([k, l]) => `<button type="button" class="${(ui.heroMode || 'hero') === k ? 'on' : ''}" data-act="heroMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const seg = `<div class="seg">${[['hero', '🌸 Обо мне'], ['stats', '📊 Итоги']].map(([k, l]) => `<button type="button" class="${(ui.heroMode || 'hero') === k ? 'on' : ''}" data-act="heroMode" data-v="${k}">${l}</button>`).join('')}</div>`;
   if (ui.heroMode === 'stats') return seg + viewStats(g);
   return seg + viewProfile(g);
 }
@@ -1531,11 +1531,11 @@ function viewProfile(g) {
   <div class="kpis">
     <div class="kpi"><b>${a.xp}</b><span>опыта всего</span></div>
     <div class="kpi"><b>${a.tasksDone}</b><span>задач выполнено</span></div>
-    <div class="kpi"><b>${a.quests}</b><span>квестов пройдено</span></div>
+    <div class="kpi"><b>${a.quests}</b><span>заданий выполнено</span></div>
     <div class="kpi"><b>🔥 ${a.best}</b><span>рекордная серия</span></div>
   </div>
   ${canAddHome() ? homeCard(false) : ''}
-  <div class="sec"><span class="tape">Лавка наград</span> <span class="r">💰 ${a.gold}</span></div>
+  <div class="sec"><span class="tape">Награды для себя</span> <span class="r">💰 ${a.gold}</span></div>
   <div class="list">
     ${S.rewards.map(r => `<div class="row">
       <div class="qicon">${r.emoji}</div>
@@ -2219,15 +2219,15 @@ function finCatSheet(id) {
 
 /* ================= render ================= */
 const ICONS = {
-  camp: '<path d="M3 20.5h18M12 3.5 3.8 20.5M12 3.5l8.2 17M12 12.5l-3.2 8M12 12.5l3.2 8"/>',
+  camp: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
   tasks: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.3 1.3L7.3 4.8M3.5 12l1.3 1.3 2.5-2.5M3.5 18l1.3 1.3 2.5-2.5"/>',
   habits: '<path d="M12 21.5c4 0 7-2.9 7-6.8 0-3-1.8-5.3-3.4-6.8-.4 1.8-1.4 2.9-2.8 3.4C13.2 8 12 5 9.2 2.5 9.2 6.5 5 9 5 14.7c0 3.9 3 6.8 7 6.8z"/>',
-  hero: '<path d="M12 3 20 6v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  hero: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
   stats: '<path d="M4 20V11M10 20V5M16 20v-6M21.5 20h-19"/>',
   goals: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
   money: '<rect x="2.5" y="6.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19M16 14.5h2.5M5.5 6.5l9.5-3.5 1.5 3.5"/>',
 };
-const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['money', 'Деньги'], ['hero', 'Герой']];
+const TABS = [['camp', 'Мой день'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['money', 'Деньги'], ['hero', 'Профиль']];
 const app = document.getElementById('app');
 const fab = document.getElementById('fab');
 const tabbar = document.getElementById('tabbar');
@@ -2293,7 +2293,7 @@ function taskSheet(id, presetDue, presetGoal) {
     ${goals.length ? `<div class="lbl">К какой цели ведёт</div>
     <select name="goalId" class="sel"><option value="">— без цели —</option>${goals.map(g => `<option value="${g.id}" ${g.id === goalId ? 'selected' : ''}>${areaOf(g.area).e} ${esc(g.title)}</option>`).join('')}</select>` : ''}
     <div class="lbl">Сложность — от неё зависит награда</div>
-    <div class="chips">${[[0, 'Обычная · 10 XP'], [1, '🟠 Средняя · 15 XP'], [2, '🔴 Эпичная · 25 XP']].map(([v, l]) => `<button type="button" class="chip ${prio === v ? 'on' : ''}" data-act="pick" data-name="prio" data-v="${v}">${l}</button>`).join('')}</div>
+    <div class="chips">${[[0, 'Обычная · 10 XP'], [1, '🟠 Средняя · 15 XP'], [2, '🔴 Важная · 25 XP']].map(([v, l]) => `<button type="button" class="chip ${prio === v ? 'on' : ''}" data-act="pick" data-name="prio" data-v="${v}">${l}</button>`).join('')}</div>
     <button class="btn">${t ? 'Сохранить' : 'Добавить'}</button>
     ${t ? `<button type="button" class="btn ghost" data-act="delTask" data-id="${t.id}">Удалить задачу</button>` : ''}
   </form>`);
@@ -2366,7 +2366,7 @@ function dayBody(s) {
       <div class="grow ttl">${esc(t.title)}</div><span class="xpb ${t.prio ? 'p' + t.prio : ''}">+${taskReward(t).xp}</span></div>`).join('')}</div>` : ''}
     ${missed.length ? `<div class="lbl">${s === T ? 'Ещё не сделано' : 'Не успел в этот день'}</div><div class="list">${missed.map(t => `<div class="row">
       <span class="qdone" style="width:auto;font-size:16px;color:var(--danger)">○</span><div class="grow ttl">${esc(t.title)}</div></div>`).join('')}</div>` : ''}
-    ${quests.length ? `<div class="lbl">Пройденные квесты</div><div class="chips">${quests.map(q => `<span class="chip">${q.i} ${q.t}</span>`).join('')}</div>` : ''}
+    ${quests.length ? `<div class="lbl">Выполненные задания</div><div class="chips">${quests.map(q => `<span class="chip">${q.i} ${q.t}</span>`).join('')}</div>` : ''}
     ${nothing ? `<div class="card empty"><div class="big">🌙</div>В этот день ничего не отмечено</div>` : ''}`;
 }
 function daySheet(s) {
@@ -2444,18 +2444,18 @@ function rewardSheet(id) {
     <input type="hidden" name="id" value="${r ? r.id : ''}">
     <input type="hidden" name="emoji" value="${emoji}">
     <div class="field"><input name="title" placeholder="Чем себя порадуешь?" value="${r ? esc(r.title) : ''}" required maxlength="60" autocomplete="off"></div>
-    <div class="lbl">Цена в золоте 💰</div>
+    <div class="lbl">Цена в монетках 💰</div>
     <div class="field"><input name="cost" type="number" inputmode="numeric" min="1" max="100000" value="${r ? r.cost : 50}" required></div>
     <div class="lbl">Иконка</div>
     <div class="emojis">${REWARD_EMOJIS.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-act="pick" data-name="emoji" data-v="${e}">${e}</button>`).join('')}</div>
-    <button class="btn">${r ? 'Сохранить' : 'Добавить в лавку'}</button>
-    ${r ? `<button type="button" class="btn ghost" data-act="delReward" data-id="${r.id}">Убрать из лавки</button>` : ''}
+    <button class="btn">${r ? 'Сохранить' : 'Добавить награду'}</button>
+    ${r ? `<button type="button" class="btn ghost" data-act="delReward" data-id="${r.id}">Удалить награду</button>` : ''}
   </form>`);
   if (!r) focusLater('[name=title]');
 }
 
 function heroSheet() {
-  openSheet('Мой герой', `<form data-form="heroEdit">
+  openSheet('Мой профиль', `<form data-form="heroEdit">
     <input type="hidden" name="avatar" value="${S.hero.avatar}">
     <div class="lbl">Имя</div>
     <div class="field"><input name="name" value="${esc(S.hero.name)}" maxlength="24" required autocomplete="off"></div>
@@ -2479,14 +2479,14 @@ function bankHabit(h) {
   r.days.forEach(([d, x]) => { S.bank.days[d] = (S.bank.days[d] || 0) + x; });
 }
 function createHero(f) {
-  const name = f.elements.name.value.trim() || 'Странник';
+  const name = f.elements.name.value.trim() || 'Я';
   S.hero = { name, avatar: f.elements.avatar.value, since: today() };
   S.rewards = DEFAULT_REWARDS.map(([emoji, title, cost]) => ({ id: uid(), emoji, title, cost }));
   S.demoChecked = true;
   checkAch();
   save(); render();
   haptic.ok(); confetti(60);
-  setTimeout(() => toast(S.hero.avatar, `Добро пожаловать, ${esc(name)}!`, 'Первый котобосс уже ждёт в Лагере'), 300);
+  setTimeout(() => toast(S.hero.avatar, `Добро пожаловать, ${esc(name)}!`, 'Котик недели уже ждёт тебя в «Мой день»'), 300);
 }
 
 const A = {
@@ -2533,18 +2533,18 @@ const A = {
   closeSheet() { closeSheet(); },
   closeModal(d, el) { el.closest('.modal-wrap').remove(); },
   dismissTip() { S.tipSeen = true; save(); render(); },
-  dismissHome() { S.homeDismissed = true; save(); render(); toast('📲', 'Скрыто', 'Кнопка останется во вкладке «Герой»'); },
+  dismissHome() { S.homeDismissed = true; save(); render(); toast('📲', 'Скрыто', 'Кнопка останется во вкладке «Профиль»'); },
   addHome() { haptic.tap(); safe(() => tg.addToHomeScreen()); },
   async clearDemo() {
-    if (!(await ask('Удалить все примерные данные и начать свой планер с нуля? Имя и аватар героя останутся.'))) return;
+    if (!(await ask('Удалить все примерные данные и начать свой планер с нуля? Имя и аватар останутся.'))) return;
     resetAll(); save(); render(); window.scrollTo(0, 0); haptic.ok(); confetti(50);
     toast('🧹', 'Чистый лист!', 'Демо-данные удалены. Добавь первую задачу или привычку');
   },
   keepData() { S.demoChecked = true; save(); render(); },
   async resetAll() {
-    if (!(await ask('Удалить ВСЕ задачи, привычки, цели, финансы и прогресс героя? Это нельзя отменить.'))) return;
+    if (!(await ask('Удалить ВСЕ задачи, привычки, цели, финансы и весь прогресс? Это нельзя отменить.'))) return;
     resetAll(); save(); render(); window.scrollTo(0, 0); haptic.ok();
-    toast('🧹', 'Начинаем заново', 'Прогресс сброшен, имя и аватар героя сохранены');
+    toast('🧹', 'Начинаем заново', 'Прогресс сброшен, имя и аватар сохранены');
   },
   toggleTask(d, el, ev) {
     const t = S.tasks.find(x => x.id === d.id); if (!t) return;
@@ -2583,7 +2583,7 @@ const A = {
       haptic.heavy(); confetti(120);
       const r = GOAL_REWARD[g.type];
       modal(`<div class="big">🏆</div><div class="kick">ЦЕЛЬ ДОСТИГНУТА</div><h2>${esc(g.title)}</h2>
-        <div class="meta">Это победа! Отметь её чем-нибудь приятным из лавки 🎁</div>
+        <div class="meta">Это победа! Порадуй себя наградой из профиля 🎁</div>
         <div class="rewards"><span style="color:var(--xp)">+${r.xp} XP</span><span style="color:var(--gold)">+${r.gold} 💰</span></div>`);
     }
   },
@@ -2711,7 +2711,7 @@ const A = {
     if (!q || !q.ready || q.claimed) return;
     change(ev, () => { S.claims[d.day + ':' + d.id] = { xp: q.xp, gold: q.gold, d: d.day }; });
     haptic.ok(); confetti(35);
-    if (dailyQuests(d.day).every(x => x.claimed)) setTimeout(() => toast('🎉', 'Все квесты дня пройдены!', 'Завтра будут новые'), 700);
+    if (dailyQuests(d.day).every(x => x.claimed)) setTimeout(() => toast('🎉', 'Все задания дня выполнены!', 'Завтра будут новые'), 700);
   },
   claimBoss(d, el, ev) {
     const g = game();
@@ -2725,8 +2725,8 @@ const A = {
   async buy(d, el, ev) {
     const r = S.rewards.find(x => x.id === d.id); if (!r) return;
     const gold = computeAll().gold;
-    if (gold < r.cost) { haptic.err(); toast('💰', `Не хватает ${r.cost - gold} золота`, 'Выполни пару задач или квест дня'); return; }
-    if (!(await ask(`Купить «${r.title}» за ${r.cost} золота?`))) return;
+    if (gold < r.cost) { haptic.err(); toast('💰', `Не хватает ${r.cost - gold} монеток`, 'Выполни пару задач или задание дня'); return; }
+    if (!(await ask(`Купить «${r.title}» за ${r.cost} монеток?`))) return;
     change(ev, () => { S.purchases.push({ rid: r.id, emoji: r.emoji, title: r.title, cost: r.cost, ts: Date.now() }); });
     haptic.ok(); confetti(50);
     toast(r.emoji, 'Награда твоя!', `${esc(r.title)} — заслужено. Наслаждайся`);
@@ -2760,7 +2760,7 @@ const A = {
     S.habits = S.habits.filter(x => x.id !== d.id); save(); closeSheet(); render();
   },
   async delReward(d) {
-    if (!(await ask('Убрать награду из лавки?'))) return;
+    if (!(await ask('Удалить эту награду?'))) return;
     S.rewards = S.rewards.filter(r => r.id !== d.id); save(); closeSheet(); render();
   },
   async clearDone() {
