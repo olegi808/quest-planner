@@ -404,7 +404,8 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .calnav b{font-family:var(--script);font-size:22px;font-weight:400}
 
 /* наклейки и лавка */
-.reset-btn{margin-top:22px;font-size:19px;opacity:.85}
+.reset-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 4px 12px}
+.reset-row .chip{color:var(--danger);white-space:nowrap}
 .demo-note{background:#eef1e8!important}
 .trophy:not(.locked) .ti{display:inline-flex;width:54px;height:54px;align-items:center;justify-content:center;border-radius:50%;background:var(--paper2);box-shadow:0 0 0 3px #fff,0 3px 8px rgba(120,80,85,.25);transform:rotate(-6deg);margin:2px 0 4px}
 .trophy:nth-child(even):not(.locked) .ti{transform:rotate(5deg)}
@@ -1446,6 +1447,7 @@ function viewProfile(g) {
   const slain = Object.entries(S.bosses).filter(([, b]) => b.claimed).sort(([x], [y]) => x.localeCompare(y));
   const got = Object.keys(S.ach).length;
   return `${heroCard(g, { big: true })}
+  <div class="reset-row"><span class="meta">Хочешь начать заново?</span><button type="button" class="chip" data-act="resetAll">🧹 Очистить всё</button></div>
   <div class="kpis">
     <div class="kpi"><b>${a.xp}</b><span>опыта всего</span></div>
     <div class="kpi"><b>${a.tasksDone}</b><span>задач выполнено</span></div>
@@ -1465,13 +1467,26 @@ function viewProfile(g) {
   ${S.purchases.length ? `<div class="meta" style="margin:-4px 4px 12px">Последнее: ${S.purchases.slice(-3).reverse().map(p => `${p.emoji} ${esc(p.title)}`).join(' · ')}</div>` : ''}
   ${slain.length ? `<div class="sec"><span class="tape">Укрощённые котики · ${slain.length}</span></div><div class="card slain">${slain.map(([, b]) => `<span title="${BOSSES[b.idx].n}">${BOSSES[b.idx].e}</span>`).join('')}</div>` : ''}
   <div class="sec"><span class="tape">Коллекция наклеек</span> <span class="r">${got}/${ACH.length}</span></div>
-  <div class="trophies">${ACH.map(x => `<div class="trophy ${S.ach[x.id] ? '' : 'locked'}"><div class="ti">${x.i}</div><b>${x.n}</b><span>${x.d}${S.ach[x.id] ? '' : ` · ${x.g} 💰`}</span></div>`).join('')}</div>
-  <button type="button" class="btn ghost reset-btn" data-act="resetAll">🧹 Начать с чистого листа</button>`;
+  <div class="trophies">${ACH.map(x => `<div class="trophy ${S.ach[x.id] ? '' : 'locked'}"><div class="ti">${x.i}</div><b>${x.n}</b><span>${x.d}${S.ach[x.id] ? '' : ` · ${x.g} 💰`}</span></div>`).join('')}</div>`;
 }
 // Похоже ли на данные из старого демо-режима (по характерным примерам)
-const looksLikeDemo = () => !S.demoChecked
-  && S.habits.some(h => h.name === 'Выпить 2 л воды') && S.habits.some(h => h.name === 'Пробежка')
-  && S.tasks.some(t => t.title === 'Оплатить интернет');
+const DEMO_MARKS = {
+  habits: ['Выпить 2 л воды', 'Пробежка', 'Читать 20 минут', 'Медитация'],
+  tasks: ['Оплатить интернет', 'Позвонить маме', 'Разобрать почту', 'Купить продукты', 'Записаться к стоматологу', 'Подготовить отчёт', 'Придумать подарок другу', 'Позвонить маме 💌', 'Обновить документы 💻', 'Контент-план 🌷', 'Ревью проекта ✨', 'Разобрать заказы 🛎️', 'Испечь кексы 🧁', 'Сходить в спортзал 🏋️'],
+  goals: ['Пробежать полумарафон 🏃', 'Английский до уровня B2', 'Финансовая подушка на 3 месяца', 'Навести порядок дома'],
+  asc: ['Без сладкого', 'Без соцсетей до 12:00', 'Холодный душ'],
+  fin: ['Аренда квартиры', 'Фриланс-заказ', 'Абонемент в зал', 'Коммуналка Telasi', 'Яндекс Плюс'],
+};
+// Похоже на старые демо-данные, если совпало хотя бы 2 характерных примера
+const looksLikeDemo = () => {
+  if (S.demoChecked) return false;
+  const n = DEMO_MARKS.habits.filter(x => S.habits.some(h => h.name === x)).length
+    + DEMO_MARKS.tasks.filter(x => S.tasks.some(t => t.title === x)).length
+    + DEMO_MARKS.goals.filter(x => S.goals.some(g => g.title === x)).length
+    + DEMO_MARKS.asc.filter(x => S.asc.some(a => a.title === x)).length
+    + DEMO_MARKS.fin.filter(x => S.fin.some(o => o.note === x)).length;
+  return n >= 2;
+};
 // Сброс всего прогресса: остаются только имя и аватар героя
 function resetAll() {
   const hero = S.hero;
