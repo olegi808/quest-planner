@@ -572,6 +572,28 @@ form.gtype-year .only-month{display:none}
 .wrow input[type=range]::-moz-range-track{height:7px;border-radius:4px;background:rgba(150,110,115,.14)}
 .wrow input[type=range]::-moz-range-progress{height:7px;border-radius:4px;background:var(--c)}
 .wrow input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--paper2);border:2.5px solid var(--c)}
+/* статистика: один график, периоды, сводка дня */
+.pnav{display:flex;align-items:center;justify-content:space-between;margin:-2px 0 10px}
+.pnav b{font-family:var(--hand);font-size:21px}
+.pnav button{border:0;background:var(--card);border:1px solid var(--line);width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1;padding:0 0 2px}
+.pnav button:disabled{opacity:.3}
+.k3 .kpi.tap::after{display:none}
+.kpi em{display:block;font-style:normal;font-size:11.5px;font-weight:700;color:var(--ink2);margin-top:3px}
+.kpi em.up{color:#7d9a72}.kpi em.down{color:var(--danger)}
+.kpi.cur{box-shadow:inset 0 0 0 1.5px var(--rose),var(--shadow)}
+.mchips{display:flex;gap:6px;margin-bottom:10px}
+.mchips button{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:16px;padding:5px 0;font-family:var(--hand);font-size:18px;font-weight:700;color:var(--ink2)}
+.mchips button.on{background:var(--pink);border-color:transparent;color:var(--ink)}
+.chart .avgline{stroke:var(--ink2);stroke-width:.8;opacity:.35}
+.chart .avglbl{font-size:10px;fill:var(--ink2)}
+.chart text.sel{fill:var(--ink);font-weight:700}
+.chart .val.sel{font-size:12px}
+.dsum{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:var(--paper);border-radius:12px;border:1px solid var(--line)}
+.dsum-d{flex:none}
+.dsum-d b{font-family:var(--hand);font-size:19px}
+.dsum-v{flex:1;display:flex;gap:10px;font-size:13px;font-weight:700;flex-wrap:wrap}
+.dsum .chip{flex:none;padding:3px 10px;font-size:13px}
+.insight{font-size:13px;color:var(--ink2);margin-top:10px;text-align:center}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
 </head>
@@ -1136,18 +1158,22 @@ function bars(values, labels, color, opts = {}) {
   const max = opts.max || Math.max(1, ...values);
   const every = n <= 7 ? 1 : n <= 31 ? 5 : 15;
   let s = `<svg viewBox="0 0 ${W} ${H}" class="chart">`;
+  const selIdx = opts.days && opts.sel ? opts.days.indexOf(opts.sel) : -1;
+  // линия среднего — сплошная, еле заметная
+  if (opts.avg) { const ay = H - bottom - (opts.avg / max) * (H - top - bottom); s += `<line x1="0" x2="${W}" y1="${ay.toFixed(1)}" y2="${ay.toFixed(1)}" class="avgline"/><text x="${W}" y="${(ay - 3).toFixed(1)}" text-anchor="end" class="avglbl">ср. ${opts.fmtAvg ? opts.fmtAvg(opts.avg) : Math.round(opts.avg)}</text>`; }
   values.forEach((v, i) => {
     const x = i * (bw + gap);
     const h = Math.max(v > 0 ? 3 : 2, (v / max) * (H - top - bottom));
     const y = H - bottom - h;
-    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(4, bw / 2).toFixed(1)}" fill="${color}" opacity="${v > 0 ? 1 : .2}"/>`;
-    if (n <= 7 && v > 0) s += `<text class="val" x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle">${v}</text>`;
-    if ((n - 1 - i) % every === 0) s += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${labels[i]}</text>`;
+    const dim = selIdx >= 0 && i !== selIdx;
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(4, bw / 2).toFixed(1)}" fill="${color}" opacity="${v > 0 ? (dim ? .38 : 1) : .2}"/>`;
+    if ((n <= 7 || i === selIdx) && v > 0) s += `<text class="val ${i === selIdx ? 'sel' : ''}" x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle">${v}${opts.unit || ''}</text>`;
+    if ((n - 1 - i) % every === 0 || i === selIdx) s += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" class="${i === selIdx ? 'sel' : ''}">${labels[i]}</text>`;
   });
-  // Невидимые зоны нажатия на всю высоту столбца — по ним открывается день
+  // Невидимые зоны нажатия на всю высоту столбца
   if (opts.days) values.forEach((v, i) => {
     const x = i * (bw + gap) - gap / 2;
-    s += `<rect class="hit" x="${x.toFixed(1)}" y="0" width="${(bw + gap).toFixed(1)}" height="${H}" data-act="dayInfo" data-day="${opts.days[i]}"/>`;
+    s += `<rect class="hit" x="${x.toFixed(1)}" y="0" width="${(bw + gap).toFixed(1)}" height="${H}" data-act="${opts.act || 'dayInfo'}" data-day="${opts.days[i]}"/>`;
   });
   return s + '</svg>';
 }
@@ -1370,17 +1396,44 @@ function viewHero(g) {
 function viewStats(g) {
   const T = today();
   const R = ui.statRange;
-  const days = Array.from({ length: R }, (_, i) => addDays(T, i - R + 1));
+  const off = ui.statOff || 0;                       // сколько периодов назад
+  const end = addDays(T, -off * R);
+  const days = Array.from({ length: R }, (_, i) => addDays(end, i - R + 1));
   const from = days[0];
+  const prevDays = days.map(s => addDays(s, -R));    // такой же период до этого — для сравнения
   const labels = days.map(s => R <= 7 ? WD[wd(s)] : String(parse(s).getDate()));
-  const xVals = days.map(s => g.all.dayXp[s] || 0);
-  const tVals = days.map(tasksDoneOn);
-  const hVals = days.map(s => { const r = dayHabitRatio(s); return r === null ? 0 : Math.round(r * 100); });
-  const xTotal = xVals.reduce((a, b) => a + b, 0);
-  const tTotal = tVals.reduce((a, b) => a + b, 0);
+  const xpOf = s => g.all.dayXp[s] || 0;
+  const hOf = s => { const r = dayHabitRatio(s); return r === null ? 0 : Math.round(r * 100); };
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const xVals = days.map(xpOf), tVals = days.map(tasksDoneOn), hVals = days.map(hOf);
+  const xTotal = sum(xVals), tTotal = sum(tVals);
+  const xPrev = sum(prevDays.map(xpOf)), tPrev = sum(prevDays.map(tasksDoneOn));
   const hs = activeHabits();
-  const rates = hs.map(h => habitRate(h, from, T)).filter(x => x !== null);
-  const hAvg = rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length * 100) : 0;
+  const rateIn = (a, b) => { const r = hs.map(h => habitRate(h, a, b)).filter(x => x !== null); return r.length ? Math.round(sum(r) / r.length * 100) : 0; };
+  const hAvg = rateIn(from, end), hPrev = rateIn(prevDays[0], prevDays[R - 1]);
+  const delta = (cur, prev, pts) => {
+    if (pts) { const d = cur - prev; return d ? `<em class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)} п.п.</em>` : '<em>как раньше</em>'; }
+    if (!prev) return cur ? '<em class="up">▲ новое</em>' : '';
+    const p = Math.round((cur - prev) / prev * 100);
+    return p ? `<em class="${p > 0 ? 'up' : 'down'}">${p > 0 ? '▲' : '▼'} ${Math.abs(p)}%</em>` : '<em>как раньше</em>';
+  };
+  const fmtShort = s => { const d = parse(s); return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`; };
+  const periodLabel = off === 0 ? (R === 7 ? 'Последние 7 дней' : `Последние ${R} дней`) : `${fmtShort(from)} – ${fmtShort(end)}`;
+
+  // один график с выбором метрики
+  const M = ui.statMetric || 'xp';
+  const metric = {
+    xp: { t: 'Опыт', vals: xVals, color: 'var(--xp)', unit: '', avg: xTotal / R, max: 0 },
+    tasks: { t: 'Задачи', vals: tVals, color: 'var(--accent)', unit: '', avg: tTotal / R, max: 0, fmtAvg: v => v.toFixed(1) },
+    habits: { t: 'Привычки', vals: hVals, color: 'var(--ok)', unit: '%', avg: sum(hVals) / R, max: 100 },
+  }[M];
+  const sel = days.includes(ui.statSel) ? ui.statSel : end;
+  const bestI = metric.vals.indexOf(Math.max(...metric.vals));
+  const selSummary = `<div class="dsum">
+      <div class="dsum-d"><b>${fmtDate(sel)}</b>${sel !== T && sel >= addDays(T, -1) ? '' : ''}</div>
+      <div class="dsum-v"><span style="color:var(--xp)">${xpOf(sel)} XP</span><span>✓ ${tasksDoneOn(sel)}</span><span style="color:#7d9a72">🌿 ${dayHabitRatio(sel) === null ? '—' : hOf(sel) + '%'}</span></div>
+      <button type="button" class="chip" data-act="dayInfo" data-day="${sel}">Подробнее ›</button>
+    </div>`;
 
   const weeks = 18;
   const start = addDays(T, -((weeks - 1) * 7 + wd(T)));
@@ -1394,22 +1447,28 @@ function viewStats(g) {
   }
 
   return `<div class="seg">${[[7, '7 дней'], [30, '30 дней'], [90, '90 дней']].map(([k, l]) => `<button type="button" class="${R === k ? 'on' : ''}" data-act="range" data-v="${k}">${l}</button>`).join('')}</div>
-  <div class="kpis">
-    <div class="kpi tap" data-act="tab" data-v="hero"><b style="color:var(--xp)">${xTotal}</b><span>опыта получено</span></div>
-    <div class="kpi tap" data-act="goTasks" data-v="done"><b>${tTotal}</b><span>задач выполнено</span></div>
-    <div class="kpi tap" data-act="tab" data-v="habits"><b>${hAvg}%</b><span>выполнение привычек</span></div>
-    <div class="kpi tap" data-act="goTasks" data-v="all"><b>${S.tasks.filter(t => !t.done).length}</b><span>задач в работе</span></div>
+  <div class="pnav">
+    <button type="button" data-act="statOff" data-v="1" aria-label="Предыдущий период">‹</button>
+    <b>${periodLabel}</b>
+    <button type="button" data-act="statOff" data-v="-1" ${off === 0 ? 'disabled' : ''} aria-label="Следующий период">›</button>
   </div>
-  <div class="card"><div class="ctitle"><b>Опыт по дням</b><span class="meta">≈ ${Math.round(xTotal / R)} XP в день</span></div>${bars(xVals, labels, 'var(--xp)', { days })}
-    <div class="meta" style="margin-top:6px;text-align:center">👆 Нажми на любой день — покажу подробности</div></div>
-  <div class="card"><div class="ctitle"><b>Выполненные задачи</b><span class="meta">≈ ${(tTotal / R).toFixed(1)} в день</span></div>${bars(tVals, labels, 'var(--accent)', { days })}</div>
-  <div class="card"><div class="ctitle"><b>Привычки по дням</b><span class="meta">% от плана</span></div>${bars(hVals, labels, 'var(--ok)', { max: 100, days })}</div>
+  <div class="kpis k3">
+    <div class="kpi tap ${M === 'xp' ? 'cur' : ''}" data-act="statMetric" data-v="xp"><b style="color:var(--xp)">${xTotal}</b><span>опыта</span>${delta(xTotal, xPrev)}</div>
+    <div class="kpi tap ${M === 'tasks' ? 'cur' : ''}" data-act="statMetric" data-v="tasks"><b>${tTotal}</b><span>задач</span>${delta(tTotal, tPrev)}</div>
+    <div class="kpi tap ${M === 'habits' ? 'cur' : ''}" data-act="statMetric" data-v="habits"><b>${hAvg}%</b><span>привычек</span>${delta(hAvg, hPrev, true)}</div>
+  </div>
+  <div class="card">
+    <div class="mchips">${[['xp', 'Опыт'], ['tasks', 'Задачи'], ['habits', 'Привычки']].map(([k, l]) => `<button type="button" class="${M === k ? 'on' : ''}" data-act="statMetric" data-v="${k}">${l}</button>`).join('')}</div>
+    ${bars(metric.vals, labels, metric.color, { days, sel: days.includes(ui.statSel) ? sel : null, act: 'statSel', avg: metric.avg, max: metric.max, unit: metric.unit, fmtAvg: metric.fmtAvg })}
+    ${selSummary}
+    ${metric.vals[bestI] > 0 ? `<div class="insight">🌟 Лучший день — <b>${fmtDate(days[bestI]).toLowerCase()}</b>: ${metric.vals[bestI]}${metric.unit} ${M === 'xp' ? 'XP' : M === 'tasks' ? plural(metric.vals[bestI], 'задача', 'задачи', 'задач') : 'привычек'}</div>` : ''}
+  </div>
   <div class="card"><div class="ctitle"><b>Карта активности</b><span class="meta">${weeks} недель</span></div>
     <div class="heat">${heat}</div>
     <div class="legend">меньше <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> больше</div>
   </div>
   ${hs.length ? `<div class="sec"><span class="tape">По привычкам</span></div><div class="card" style="padding:4px 14px">${hs.map(h => {
-    const r = habitRate(h, from, T); const pc = r === null ? 0 : Math.round(r * 100);
+    const r = habitRate(h, from, end); const pc = r === null ? 0 : Math.round(r * 100);
     return `<div class="hstat tap" style="--c:${h.color}" data-act="habitStats" data-id="${h.id}"><div class="hemoji sm">${h.emoji}</div><div class="grow">
       <div class="hs-top"><b>${esc(h.name)}</b><span>${r === null ? '—' : pc + '%'} ›</span></div>
       <div class="bar"><i style="width:${pc}%;background:${h.color}"></i></div>
@@ -1933,7 +1992,10 @@ function createHero(f, demo) {
 const A = {
   tab(d) { if (ui.tab !== d.v) { ui.tab = d.v; haptic.sel(); render(); window.scrollTo(0, 0); } },
   filter(d) { ui.taskFilter = d.v; haptic.sel(); render(); },
-  range(d) { ui.statRange = +d.v; haptic.sel(); render(); },
+  range(d) { ui.statRange = +d.v; ui.statOff = 0; ui.statSel = null; haptic.sel(); render(); },
+  statOff(d) { ui.statOff = Math.max(0, (ui.statOff || 0) + +d.v); ui.statSel = null; haptic.sel(); render(); },
+  statMetric(d) { ui.statMetric = d.v; haptic.sel(); render(); },
+  statSel(d) { ui.statSel = d.day; haptic.sel(); render(); },
   fab() {
     if (ui.tab === 'habits') return habitSheet(null);
     if (ui.tab === 'tasks' && ui.taskMode === 'cal') return taskSheet(null, ui.calDay || today());
