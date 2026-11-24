@@ -404,6 +404,8 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .calnav b{font-family:var(--script);font-size:22px;font-weight:400}
 
 /* наклейки и лавка */
+.reset-btn{margin-top:22px;font-size:19px;opacity:.85}
+.demo-note{background:#eef1e8!important}
 .trophy:not(.locked) .ti{display:inline-flex;width:54px;height:54px;align-items:center;justify-content:center;border-radius:50%;background:var(--paper2);box-shadow:0 0 0 3px #fff,0 3px 8px rgba(120,80,85,.25);transform:rotate(-6deg);margin:2px 0 4px}
 .trophy:nth-child(even):not(.locked) .ti{transform:rotate(5deg)}
 .trophy.locked .ti{display:inline-flex;width:54px;height:54px;align-items:center;justify-content:center;border-radius:50%;border:1.5px dashed rgba(150,110,115,.35);margin:2px 0 4px}
@@ -1265,7 +1267,6 @@ function viewOnboarding() {
       <div class="lbl">Имя героя</div>
       <div class="field"><input name="name" value="${esc(user ? user.first_name : '')}" placeholder="Как тебя зовут, странник?" maxlength="24" autocomplete="off" required></div>
       <button class="btn epic">Начать приключение</button>
-      <button type="button" class="btn alt" data-act="heroDemo">Начать с демо-данными</button>
     </form>
   </div>`;
 }
@@ -1283,7 +1284,8 @@ function viewCamp(g) {
       <li>Весь опыт за неделю — укрощает <b>котобосса</b></li>
       <li>Выполняй <b>квесты дня</b> и забирай награду</li>
       <li>Золото трать в <b>лавке</b> на свои реальные награды</li></ul></div>` : '';
-  return `${heroCard(g)}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
+  const demoCard = looksLikeDemo() ? `<div class="card tip demo-note"><b>🧹 Демо-режим выключен</b><div class="meta" style="margin:4px 0 10px">Похоже, сейчас здесь примерные данные из демо: задачи, привычки, траты. Очистить их и начать свой планер с нуля? Имя и аватар героя останутся.</div><button type="button" class="btn" style="margin-top:0" data-act="clearDemo">Очистить демо-данные</button><button type="button" class="btn alt" data-act="keepData">Нет, это мои данные</button></div>` : '';
+  return `${heroCard(g)}${demoCard}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
   <div class="sec"><span class="tape">Квесты дня</span> <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
   ${questList(qs)}
   ${c.hT.length ? `<div class="sec"><span class="tape">Привычки на сегодня</span> <span class="r">${c.hDone}/${c.hT.length}</span></div>
@@ -1463,7 +1465,21 @@ function viewProfile(g) {
   ${S.purchases.length ? `<div class="meta" style="margin:-4px 4px 12px">Последнее: ${S.purchases.slice(-3).reverse().map(p => `${p.emoji} ${esc(p.title)}`).join(' · ')}</div>` : ''}
   ${slain.length ? `<div class="sec"><span class="tape">Укрощённые котики · ${slain.length}</span></div><div class="card slain">${slain.map(([, b]) => `<span title="${BOSSES[b.idx].n}">${BOSSES[b.idx].e}</span>`).join('')}</div>` : ''}
   <div class="sec"><span class="tape">Коллекция наклеек</span> <span class="r">${got}/${ACH.length}</span></div>
-  <div class="trophies">${ACH.map(x => `<div class="trophy ${S.ach[x.id] ? '' : 'locked'}"><div class="ti">${x.i}</div><b>${x.n}</b><span>${x.d}${S.ach[x.id] ? '' : ` · ${x.g} 💰`}</span></div>`).join('')}</div>`;
+  <div class="trophies">${ACH.map(x => `<div class="trophy ${S.ach[x.id] ? '' : 'locked'}"><div class="ti">${x.i}</div><b>${x.n}</b><span>${x.d}${S.ach[x.id] ? '' : ` · ${x.g} 💰`}</span></div>`).join('')}</div>
+  <button type="button" class="btn ghost reset-btn" data-act="resetAll">🧹 Начать с чистого листа</button>`;
+}
+// Похоже ли на данные из старого демо-режима (по характерным примерам)
+const looksLikeDemo = () => !S.demoChecked
+  && S.habits.some(h => h.name === 'Выпить 2 л воды') && S.habits.some(h => h.name === 'Пробежка')
+  && S.tasks.some(t => t.title === 'Оплатить интернет');
+// Сброс всего прогресса: остаются только имя и аватар героя
+function resetAll() {
+  const hero = S.hero;
+  S = blank();
+  S.hero = { ...hero, since: today() };
+  S.rewards = DEFAULT_REWARDS.map(([emoji, title, cost]) => ({ id: uid(), emoji, title, cost }));
+  S.demoChecked = true;
+  Object.assign(ui, { tab: 'camp', calDay: null, calView: null, finMonth: null, statSel: null, statOff: 0, wheelDraft: null });
 }
 
 function viewStats(g) {
@@ -2364,12 +2380,12 @@ function bankHabit(h) {
   S.bank.xp += r.xp; S.bank.gold += r.gold; S.bank.checks += r.n;
   r.days.forEach(([d, x]) => { S.bank.days[d] = (S.bank.days[d] || 0) + x; });
 }
-function createHero(f, demo) {
+function createHero(f) {
   const name = f.elements.name.value.trim() || 'Странник';
   S.hero = { name, avatar: f.elements.avatar.value, since: today() };
   S.rewards = DEFAULT_REWARDS.map(([emoji, title, cost]) => ({ id: uid(), emoji, title, cost }));
-  if (demo) { seed(); S.tipSeen = false; }
-  checkAch(); // уже заработанное — без фанфар
+  S.demoChecked = true;
+  checkAch();
   save(); render();
   haptic.ok(); confetti(60);
   setTimeout(() => toast(S.hero.avatar, `Добро пожаловать, ${esc(name)}!`, 'Первый котобосс уже ждёт в Лагере'), 300);
@@ -2421,7 +2437,17 @@ const A = {
   dismissTip() { S.tipSeen = true; save(); render(); },
   dismissHome() { S.homeDismissed = true; save(); render(); toast('📲', 'Скрыто', 'Кнопка останется во вкладке «Герой»'); },
   addHome() { haptic.tap(); safe(() => tg.addToHomeScreen()); },
-  heroDemo(d, el) { const f = el.closest('form'); if (f.reportValidity()) createHero(f, true); },
+  async clearDemo() {
+    if (!(await ask('Удалить все примерные данные и начать свой планер с нуля? Имя и аватар героя останутся.'))) return;
+    resetAll(); save(); render(); window.scrollTo(0, 0); haptic.ok(); confetti(50);
+    toast('🧹', 'Чистый лист!', 'Демо-данные удалены. Добавь первую задачу или привычку');
+  },
+  keepData() { S.demoChecked = true; save(); render(); },
+  async resetAll() {
+    if (!(await ask('Удалить ВСЕ задачи, привычки, цели, финансы и прогресс героя? Это нельзя отменить.'))) return;
+    resetAll(); save(); render(); window.scrollTo(0, 0); haptic.ok();
+    toast('🧹', 'Начинаем заново', 'Прогресс сброшен, имя и аватар героя сохранены');
+  },
   toggleTask(d, el, ev) {
     const t = S.tasks.find(x => x.id === d.id); if (!t) return;
     change(ev, () => { t.done = !t.done; t.doneAt = t.done ? today() : null; t.doneTs = t.done ? Date.now() : null; });
@@ -2799,102 +2825,6 @@ document.addEventListener('input', e => {
     e.target.closest('form').querySelectorAll('[data-name="due"]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   }
 });
-
-/* ================= demo data ================= */
-function seed() {
-  const rnd = rng(1337);
-  const T = today();
-  const mk = (name, emoji, color, days, p, len) => {
-    const h = { id: uid(), name, emoji, color, days, log: {}, created: addDays(T, -len), archived: false };
-    for (let i = len; i >= 1; i--) { const s = addDays(T, -i); if (days.includes(wd(s)) && rnd() < p + (len - i) / len * 0.2) h.log[s] = 1; }
-    return h;
-  };
-  S.habits.push(
-    mk('Выпить 2 л воды', '💧', COLORS[0], [0, 1, 2, 3, 4, 5, 6], .7, 80),
-    mk('Пробежка', '🏃', COLORS[1], [0, 2, 4], .6, 80),
-    mk('Читать 20 минут', '📚', COLORS[2], [0, 1, 2, 3, 4, 5, 6], .65, 60),
-    mk('Медитация', '🧘', COLORS[4], [0, 1, 2, 3, 4], .55, 45),
-  );
-  const task = (title, due, prio = 0, extra = {}) => S.tasks.push({ id: uid(), title, note: '', due, prio, done: false, doneAt: null, created: Date.now() - Math.floor(rnd() * 1e8), ...extra });
-  task('Оплатить интернет', addDays(T, -1), 2);
-  task('Обновить документы 💻', T, 0, { time: '09:30', timeEnd: '10:00' });
-  task('Контент-план 🌷', T, 1, { time: '10:00', timeEnd: '11:00' });
-  task('Ревью проекта ✨', T, 2, { time: '11:00', timeEnd: '12:00' });
-  task('Разобрать заказы 🛎️', T, 0, { time: '16:00', timeEnd: '16:30' });
-  task('Позвонить маме 💌', T, 1, { time: '19:00', timeEnd: '19:30' });
-  task('Разобрать почту', T);
-  task('Купить продукты', T, 0, { note: 'Молоко, хлеб, яйца, овощи' });
-  task('Записаться к стоматологу', addDays(T, 1), 1, { time: '12:00' });
-  task('Испечь кексы 🧁', addDays(T, 1), 0, { time: '18:00', timeEnd: '19:30' });
-  task('Подготовить отчёт', addDays(T, 3), 2, { time: '10:00', timeEnd: '13:00' });
-  task('Сходить в спортзал 🏋️', addDays(T, 2), 0, { time: '08:00', timeEnd: '09:00' });
-  task('Придумать подарок другу', null);
-  const titles = ['Ответить на письма', 'Уборка', 'Созвон по проекту', 'Погулять с собакой', 'Прочитать статью', 'Заказать воду', 'Обновить резюме', 'Полить цветы', 'Сделать бэкап', 'Встреча с командой'];
-  for (let i = 1; i <= 90; i++) {
-    const n = Math.floor(rnd() * 4);
-    for (let k = 0; k < n; k++) { const s = addDays(T, -i); task(titles[Math.floor(rnd() * titles.length)], s, Math.floor(rnd() * 2.4), { done: true, doneAt: s, doneTs: parse(s).getTime() + 36e6 }); }
-  }
-  // история боссов: несколько недель назад — кто-то повержен, кто-то ушёл
-  const a = computeAll(), wk = weekStart(T);
-  for (let k = 8; k >= 1; k--) {
-    const w = addDays(wk, -7 * k), dmg = sumDays(a.dayXp, w, 7);
-    const win = k % 3 !== 0;
-    S.bosses[w] = { hp: Math.max(150, Math.round(dmg * (win ? .85 : 1.25) / 10) * 10), idx: Math.round(parse(w).getTime() / (7 * 864e5)) % BOSSES.length, claimed: win, reward: win ? { xp: 120, gold: 60 } : undefined };
-  }
-  // цели, фокус недели и колесо баланса
-  const Y = T.slice(0, 4), M = T.slice(0, 7);
-  const goal = (title, type, area, steps, extra = {}) => {
-    const g = { id: uid(), title, type, area, period: type === 'year' ? Y : M, parent: null, steps: steps.map(([text, done]) => ({ id: uid(), text, done, doneAt: done ? addDays(T, -Math.floor(rnd() * 20) - 1) : null })), done: false, doneAt: null, created: Date.now(), ...extra };
-    S.goals.push(g); return g;
-  };
-  const run = goal('Пробежать полумарафон 🏃', 'year', 'health', [['Бегать 3 раза в неделю', true], ['Пробежать 10 км', true], ['Пробежать 15 км', false], ['Записаться на забег', false]]);
-  const eng = goal('Английский до уровня B2', 'year', 'growth', [['Найти преподавателя', true], ['Сдать пробный тест', false]]);
-  goal('Финансовая подушка на 3 месяца', 'year', 'money', [['Посчитать расходы', true], ['Откладывать 15% дохода', false]]);
-  goal('Пробежать 10 км без остановки', 'month', 'health', [['5 км', true], ['8 км', true], ['10 км', false]], { parent: run.id });
-  goal('Прочитать 2 книги на английском', 'month', 'growth', [['Книга 1', true], ['Книга 2', false]], { parent: eng.id });
-  goal('Навести порядок дома', 'month', 'family', [['Разобрать шкаф', true], ['Балкон', true], ['Кладовка', true]], { done: true, doneAt: addDays(T, -2) });
-  S.tasks.filter(t => t.title.startsWith('Сходить в спортзал')).forEach(t => { t.goalId = run.id; });
-  S.weekFocus = { [weekStart(T)]: [{ id: uid(), text: 'Сдать отчёт по проекту', done: false }, { id: uid(), text: 'Две пробежки', done: true }] };
-  S.wheel = [
-    { d: addDays(T, -35), s: { health: 5, career: 7, money: 4, love: 6, family: 7, growth: 5, fun: 4, soul: 5 } },
-    { d: addDays(T, -6), s: { health: 7, career: 7, money: 5, love: 7, family: 8, growth: 6, fun: 5, soul: 6 } },
-  ];
-  // финансы за ~2 месяца
-  const fop = (d, amt, type, cat, note) => S.fin.push({ id: uid(), d, amt: Math.round(amt * 10) / 10, type, cat, note, ts: Date.now() });
-  const pick = a => a[Math.floor(rnd() * a.length)];
-  for (let i = 62; i >= 0; i--) {
-    const d = addDays(T, -i), dn = +d.slice(8);
-    if (dn === 5) fop(d, 2600, 'inc', 'salary', 'Зарплата');
-    if (dn === 20) fop(d, 1800, 'inc', 'salary', 'Аванс');
-    if (dn === 1) fop(d, 1500, 'exp', 'home', 'Аренда квартиры');
-    if (dn === 10) { fop(d, 25, 'exp', 'bills', 'Magti'); fop(d, 45, 'exp', 'bills', 'Silknet интернет'); fop(d, 18, 'exp', 'bills', 'Spotify'); }
-    if (dn === 3) fop(d, 120, 'exp', 'sport', 'Абонемент в зал');
-    if (dn === 15) fop(d, 140, 'exp', 'home', 'Коммуналка Telasi');
-    if (rnd() < .45) fop(d, 25 + rnd() * 95, 'exp', 'food', pick(['Nikora', 'Carrefour', 'Goodwill', 'Продукты на неделю', 'Spar']));
-    if (rnd() < .6) fop(d, 6 + rnd() * 5, 'exp', 'cafe', pick(['Кофе', 'Капучино', 'Раф с собой']));
-    if (rnd() < .3) fop(d, 6 + rnd() * 18, 'exp', 'transport', pick(['Bolt', 'Такси', 'Yandex Go']));
-    if (rnd() < .12) fop(d, 30 + rnd() * 60, 'exp', 'cafe', pick(['Wolt', 'Хинкали', 'Ужин в кафе', 'Хачапури']));
-    if (rnd() < .07) fop(d, 50 + rnd() * 160, 'exp', 'shopping', pick(['Zara', 'Кроссовки', 'Свитер', 'Наушники']));
-    if (rnd() < .05) fop(d, 20 + rnd() * 40, 'exp', 'fun', pick(['Кино', 'Концерт', 'Боулинг']));
-    if (rnd() < .05) fop(d, 12 + rnd() * 50, 'exp', 'health', pick(['Аптека PSP', 'Aversi', 'Витамины']));
-    if (rnd() < .06) fop(d, 30 + rnd() * 20, 'exp', 'pets', 'Корм для кота');
-    if (rnd() < .03) fop(d, 60, 'exp', 'beauty', 'Маникюр');
-    if (rnd() < .03) fop(d, 400 + rnd() * 600, 'inc', 'side', 'Фриланс-заказ');
-    if (rnd() < .04) fop(d, 5 + rnd() * 20, 'inc', 'bonus', 'Кэшбэк');
-  }
-  S.finBudgets = { cafe: 250, shopping: 350 };
-  // аскезы: две активные и одна завершённая
-  const logRange = (start, n, skip = []) => { const l = {}; for (let i = 0; i < n; i++) if (!skip.includes(i)) l[addDays(start, i)] = 1; return l; };
-  const sweetStart = addDays(T, -12);
-  S.asc = [
-    { id: uid(), title: 'Без сладкого', emoji: '🍬', why: 'Хочу больше энергии и чистую кожу', days: 40, start: sweetStart, log: logRange(sweetStart, 12, [11]), status: 'active', attempt: 2, created: Date.now() },
-    { id: uid(), title: 'Без соцсетей до 12:00', emoji: '📵', why: 'Утро — для себя, а не для ленты', days: 21, start: addDays(T, -5), log: logRange(addDays(T, -5), 5), status: 'active', attempt: 1, created: Date.now() },
-    { id: uid(), title: 'Холодный душ', emoji: '❄️', why: '', days: 14, start: addDays(T, -40), log: logRange(addDays(T, -40), 14), status: 'done', doneAt: addDays(T, -27), attempt: 1, created: Date.now() },
-  ];
-  // пара пройденных квестов и покупка
-  for (let i = 1; i <= 12; i++) S.claims[addDays(T, -i) + ':tasks3'] = { xp: 30, gold: 12, d: addDays(T, -i) };
-  S.purchases.push({ rid: S.rewards[0].id, emoji: S.rewards[0].emoji, title: S.rewards[0].title, cost: S.rewards[0].cost, ts: Date.now() - 864e5 * 3 });
-}
 
 /* ================= boot ================= */
 async function boot() {
