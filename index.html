@@ -524,18 +524,18 @@ form.gtype-year .only-month{display:none}
 .wheel-head b{display:block;font-family:var(--script);font-size:27px;font-weight:400;line-height:1.1}
 .wheel-head span{font-family:var(--hand);font-size:18px;color:var(--ink2)}
 .wheel{width:100%;max-width:340px;display:block;margin:0 auto}
-.wstitch{fill:none;stroke:var(--rose);stroke-width:1.2;opacity:.45}
-.wsec-bg{fill:rgba(255,250,246,.9);stroke:rgba(150,110,115,.14);stroke-width:1}
-.wgrid{fill:none;stroke:rgba(120,90,95,.1);stroke-width:.8}
-.wsec{stroke:rgba(255,250,246,.95);stroke-width:1.2;opacity:.9}
-.wprev{fill:none;stroke:var(--ink);stroke-width:1.2;opacity:.35}
+.wring{fill:none;stroke:#f3dde0;stroke-width:9}
+.wsec-bg{opacity:.45;stroke:#fffaf6;stroke-width:2}
+.wgrid{fill:none;stroke:rgba(255,250,246,.75);stroke-width:1}
+.wsec{stroke:#fffaf6;stroke-width:2}
+.wprev{fill:none;stroke:#c98591;stroke-width:1.4;opacity:.55}
 .wlabel{font-family:var(--hand);font-size:16px;font-weight:700;fill:var(--ink)}
-.wdot{fill:var(--paper2);stroke-width:1.6}
-.wval{font-family:var(--hand);font-size:15px;font-weight:700;fill:var(--ink)}
+.wdot{stroke:#fffaf6;stroke-width:2}
+.wval{font-family:var(--hand);font-size:15px;font-weight:700;fill:#fff}
 .wtape{fill:rgba(239,195,201,.9)}
-.wcenter{fill:var(--paper2);stroke:var(--rose);stroke-width:1.4}
-.wavg{font-family:var(--hand);font-size:20px;font-weight:700;fill:var(--ink)}
-.wavg-l{font-family:var(--hand);font-size:10px;fill:var(--ink2)}
+.wcenter{fill:#e6a5ae;stroke:#fffaf6;stroke-width:3}
+.wavg{font-family:var(--hand);font-size:21px;font-weight:700;fill:#fff}
+.wavg-l{font-family:var(--hand);font-size:10px;fill:#fff;opacity:.9}
 .wsliders{padding-top:10px}
 .wheel-sub{font-family:var(--hand);font-size:19px;color:var(--ink2);text-align:center;margin-bottom:4px}
 .wrow{display:grid;grid-template-columns:minmax(0,44%) 1fr 26px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--sep)}
@@ -609,14 +609,14 @@ const AVATARS = ['🧙','🧝','🦸','🧛','🧚','🤴','👸','🦊','🐺',
 const REWARD_EMOJIS = ['☕','🍰','🎮','🎬','🍕','😴','🛍️','📱','🍿','🎧','🛁','🍣','🎲','📖','🏖️','🎁'];
 // Сферы жизни для колеса баланса и целей
 const AREAS = [
-  { id: 'health', e: '💪', n: 'Здоровье', c: '#e39aa6' },
-  { id: 'career', e: '💼', n: 'Работа', c: '#b49ccd' },
-  { id: 'money', e: '💰', n: 'Финансы', c: '#e2b67f' },
-  { id: 'love', e: '❤️', n: 'Отношения', c: '#c48d9c' },
-  { id: 'family', e: '🏡', n: 'Семья и друзья', c: '#9fbb98' },
-  { id: 'growth', e: '📚', n: 'Развитие', c: '#94bcd3' },
-  { id: 'fun', e: '🎨', n: 'Отдых и хобби', c: '#d4a98e' },
-  { id: 'soul', e: '🌿', n: 'Душевный баланс', c: '#a3b4c8' },
+  { id: 'health', e: '💪', n: 'Здоровье', c: '#e8a3ae', p: '#f6cdd3' },
+  { id: 'career', e: '💼', n: 'Работа', c: '#bba7d8', p: '#e1d6ef' },
+  { id: 'money', e: '💰', n: 'Финансы', c: '#e2bd8c', p: '#f6e3c8' },
+  { id: 'love', e: '❤️', n: 'Отношения', c: '#dc929d', p: '#f2c3ca' },
+  { id: 'family', e: '🏡', n: 'Семья и друзья', c: '#a8c39c', p: '#d9e7d2' },
+  { id: 'growth', e: '📚', n: 'Развитие', c: '#9cc0d4', p: '#d3e5ee' },
+  { id: 'fun', e: '🎨', n: 'Отдых и хобби', c: '#e0a98f', p: '#f4d8ca' },
+  { id: 'soul', e: '🌿', n: 'Душевный баланс', c: '#c2b59c', p: '#e8e1d2' },
 ];
 const areaOf = id => AREAS.find(a => a.id === id) || AREAS[5];
 const GOAL_REWARD = { year: { xp: 100, gold: 50 }, month: { xp: 40, gold: 20 } };
@@ -1562,17 +1562,17 @@ function wheelSvg(scores, prev) {
     const [x0, y0] = pt(bottom ? a1 : a0, rl), [x1, y1] = pt(bottom ? a0 : a1, rl);
     s += `<path id="wl-${a.id}" d="M${x0} ${y0}A${rl} ${rl} 0 0 ${bottom ? 0 : 1} ${x1} ${y1}" fill="none"/>`;
   });
-  s += `</defs>`;
-  s += `<circle cx="${C}" cy="${C}" r="${R + 6}" class="wstitch"/>`;
-  AREAS.forEach((a, i) => { s += `<path d="${sector(i, R, gap)}" class="wsec-bg"/>`; });
+  s += `<filter id="wshadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#9c6b72" flood-opacity=".22"/></filter></defs>`;
+  s += `<circle cx="${C}" cy="${C}" r="${R + 7}" class="wring"/>`;
+  AREAS.forEach((a, i) => { s += `<path d="${sector(i, R, gap)}" fill="${a.p}" class="wsec-bg"/>`; });
   for (let k = 2; k <= 10; k += 2) s += `<circle cx="${C}" cy="${C}" r="${R * k / 10}" class="wgrid"/>`;
-  AREAS.forEach((a, i) => { const v = scores[a.id] || 0; if (v) s += `<path d="${sector(i, R * v / 10, gap)}" fill="${a.c}" class="wsec"/>`; });
+  AREAS.forEach((a, i) => { const v = scores[a.id] || 0; if (v) s += `<path d="${sector(i, R * v / 10, gap)}" fill="${a.c}" class="wsec" filter="url(#wshadow)"/>`; });
   if (prev) AREAS.forEach((a, i) => { const v = prev[a.id] || 0; s += `<path d="${sector(i, R * v / 10, gap)}" class="wprev"/>`; });
   AREAS.forEach((a, i) => {
     const mid = i * step - 90;
     s += `<text class="wlabel"><textPath href="#wl-${a.id}" startOffset="50%" text-anchor="middle">${WHEEL_SHORT[a.id]}</textPath></text>`;
     const v = scores[a.id] || 0, [vx, vy] = pt(mid, Math.max(R * v / 10 - 14, 36));
-    s += `<circle cx="${vx}" cy="${vy}" r="10" class="wdot" stroke="${a.c}"/><text x="${vx}" y="${vy}" class="wval" text-anchor="middle" dominant-baseline="central">${v}</text>`;
+    s += `<circle cx="${vx}" cy="${vy}" r="10" class="wdot" fill="${a.c}"/><text x="${vx}" y="${vy}" class="wval" text-anchor="middle" dominant-baseline="central">${v}</text>`;
   });
   const avg = AREAS.reduce((x, a) => x + (scores[a.id] || 0), 0) / n;
   s += `<circle cx="${C}" cy="${C}" r="24" class="wcenter"/>
@@ -1591,7 +1591,7 @@ function viewWheel() {
       <div class="wheel-head"><b>Моё колесо баланса</b><span>${new Date().getDate()} ${MONTHS[new Date().getMonth()]}</span></div>
       <div id="wheelBox">${wheelSvg(d, last ? last.s : null)}</div>
       <div class="meta" style="text-align:center">${last ? `Последняя оценка: ${fmtDate(last.d).toLowerCase()} · средний балл ${wheelAvg(last.s).toFixed(1)}${delta !== null ? ` (${delta >= 0 ? '+' : ''}${delta.toFixed(1)})` : ''}` : 'Оцени каждую сферу жизни от 1 до 10 — честно, без идеала'}</div>
-      ${last ? '<div class="legend" style="justify-content:center;margin-top:6px"><span><i style="border:1.2px solid rgba(75,58,61,.45)"></i> прошлая оценка</span></div>' : ''}
+      ${last ? '<div class="legend" style="justify-content:center;margin-top:6px"><span><i style="border:1.4px solid rgba(201,133,145,.7)"></i> прошлая оценка</span></div>' : ''}
     </div>
     <div class="card wsliders"><div class="wheel-sub">Оцени каждую сферу от 1 до 10</div>${AREAS.map(a => `<div class="wrow" style="--c:${a.c}">
       <span class="wname"><span class="wemo-s">${a.e}</span>${a.n}</span>
