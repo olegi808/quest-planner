@@ -64,7 +64,10 @@ main{max-width:560px;margin:0 auto;padding:calc(14px + var(--top)) 16px 72px}
 .boss{background:linear-gradient(135deg,color-mix(in srgb,var(--hp) 17%,var(--card)),var(--card) 75%)}
 .bhead{display:flex;gap:12px;align-items:center;margin-bottom:12px}
 .bemoji{font-size:48px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;flex:none;animation:idle 3s ease-in-out infinite}
-.bemoji.dead{filter:grayscale(1);transform:rotate(80deg);opacity:.55;animation:none}
+.bemoji.dead{position:relative;filter:none;transform:none;opacity:1;animation:purr 2.4s ease-in-out infinite}
+.bemoji .zzz{position:absolute;right:-4px;top:-2px;font-size:18px;animation:zz 2.4s ease-in-out infinite}
+@keyframes purr{50%{transform:scale(1.05)}}
+@keyframes zz{0%,100%{opacity:.3;transform:translateY(2px)}50%{opacity:1;transform:translateY(-4px)}}
 .bemoji.hit{animation:hit .5s}
 .kicker{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--hp);text-transform:uppercase}
 .bname{font-weight:700;font-size:16px}
@@ -340,7 +343,7 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 
 /* босс — стикер со скрепкой */
 .boss{position:relative;background:#efe4d6;transform:rotate(-.6deg);overflow:visible}
-.boss::after{content:"📎";position:absolute;top:-16px;right:24px;font-size:28px;transform:rotate(25deg)}
+.boss::after{content:"🐾";position:absolute;top:-16px;right:24px;font-size:28px;transform:rotate(25deg)}
 .kicker{font-family:var(--hand);font-size:17px;letter-spacing:.02em;text-transform:none;font-weight:700;color:var(--rose)}
 .bname{font-family:var(--script);font-size:24px;font-weight:400}
 .hpbar{border-radius:4px;background:rgba(120,80,85,.1);height:22px}
@@ -688,14 +691,15 @@ const ascReward = a => ({ xp: a.days * 3, gold: a.days });
 const DEFAULT_REWARDS =[['☕', 'Кофе с десертом', 30], ['🎬', 'Серия любимого сериала', 40], ['🎮', 'Час игр без чувства вины', 60], ['😴', 'Поспать подольше', 80], ['🍕', 'Заказать пиццу', 150], ['🛍️', 'Купить себе что-то приятное', 400]];
 
 const BOSSES = [
-  { e: '🐉', n: 'Дракон Прокрастинации', d: 'Шепчет: «сделаешь завтра»' },
-  { e: '👺', n: 'Гоблин Лени', d: 'Тянет обратно под одеяло' },
-  { e: '👻', n: 'Призрак Сомнений', d: 'Твердит, что не получится' },
-  { e: '🦑', n: 'Кракен Соцсетей', d: 'Опутывает щупальцами ленты' },
-  { e: '🗿', n: 'Голем Рутины', d: 'Превращает дни в серый камень' },
-  { e: '👹', n: 'Демон Хаоса', d: 'Разбрасывает дела по углам' },
-  { e: '💀', n: 'Лич Выгорания', d: 'Высасывает силы и мотивацию' },
-  { e: '🐍', n: 'Гидра Дедлайнов', d: 'На месте одной задачи — две' },
+  // котобоссы недели: побеждённый кот не исчезает, а становится укрощённым 😽
+  { e: '😾', n: 'Кот Прокрастинатор', d: 'Мурлычет: «сделаешь завтра, мрр»' },
+  { e: '😺', n: 'Кот Лени', d: 'Улёгся на ноутбук и не пускает к делам' },
+  { e: '🙀', n: 'Кот Сомнений', d: 'Пугается каждой новой задачи' },
+  { e: '😼', n: 'Кот-Скроллер', d: 'Листает ленту лапкой часами' },
+  { e: '🐈', n: 'Кот Рутины', d: 'Ходит по кругу: миска — диван — миска' },
+  { e: '😹', n: 'Кот Хаоса', d: 'Смахивает дела со стола одно за другим' },
+  { e: '😿', n: 'Кот Хандры', d: 'Зовёт поваляться под пледом весь день' },
+  { e: '😸', n: 'Кот-Обжора Дедлайнов', d: 'Съедает всё время до дедлайна' },
 ];
 const TITLES = [[1, 'Новобранец'], [3, 'Странник'], [5, 'Следопыт'], [8, 'Рыцарь'], [12, 'Ветеран'], [16, 'Мастер'], [20, 'Чемпион'], [25, 'Легенда'], [30, 'Мифический герой']];
 const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
@@ -738,8 +742,8 @@ const ACH = [
   { id: 'p10', i: '🌟', n: 'Сияние', d: '10 идеальных дней', g: 60, ok: s => s.perfect >= 10 },
   { id: 'q10', i: '🎯', n: 'Искатель', d: '10 квестов дня', g: 30, ok: s => s.quests >= 10 },
   { id: 'q50', i: '🗺️', n: 'Странствующий рыцарь', d: '50 квестов дня', g: 100, ok: s => s.quests >= 50 },
-  { id: 'b1', i: '🐉', n: 'Драконоборец', d: 'Победи босса недели', g: 50, ok: s => s.bosses >= 1 },
-  { id: 'b5', i: '🛡️', n: 'Охотник на чудовищ', d: 'Победи 5 боссов', g: 150, ok: s => s.bosses >= 5 },
+  { id: 'b1', i: '🐾', n: 'Котоукротитель', d: 'Укроти котобосса недели', g: 50, ok: s => s.bosses >= 1 },
+  { id: 'b5', i: '😻', n: 'Кошачий шептун', d: 'Укроти 5 котобоссов', g: 150, ok: s => s.bosses >= 5 },
   { id: 'l5', i: '⭐', n: 'Подмастерье', d: 'Достигни 5 уровня', g: 30, ok: s => s.level >= 5 },
   { id: 'l10', i: '💫', n: 'Герой', d: 'Достигни 10 уровня', g: 80, ok: s => s.level >= 10 },
   { id: 'l20', i: '🌠', n: 'Полубог', d: 'Достигни 20 уровня', g: 200, ok: s => s.level >= 20 },
@@ -1082,7 +1086,7 @@ function fx(b, m, ev, newAch) {
       if (r.bottom > 0 && r.top < innerHeight) floatText(r.left + r.width / 2, r.top + 10, '−' + (m.dmg - b.dmg), 'dmg');
     }
   }
-  if (!b.dead && m.dead) setTimeout(() => { haptic.heavy(); confetti(90); toast('🏆', 'Босс повержен!', 'Открой сундук в Лагере'); }, 450);
+  if (!b.dead && m.dead) setTimeout(() => { haptic.heavy(); confetti(90); toast('😽', 'Котик укрощён!', 'Забери награду в Лагере'); }, 450);
   if (m.level > b.level) setTimeout(() => levelUpModal(m.level, m.title !== b.title ? m.title : null), 600);
   (newAch || []).forEach((a, i) => setTimeout(() => { haptic.ok(); toast(a.i, 'Трофей: ' + a.n, `${a.d} · +${a.g} 💰`); }, 900 + i * 700));
 }
@@ -1143,18 +1147,18 @@ function bossCard(b) {
   const pct = Math.max(0, b.left / b.hp * 100);
   if (b.dead) {
     return `<div class="card boss">
-      <div class="bhead"><div class="bemoji dead">${b.def.e}</div><div class="grow">
-        <div class="kicker" style="color:var(--ok)">Повержен!</div><div class="bname">${b.def.n}</div>
-        <div class="meta">${b.claimed ? 'Сундук открыт. Новый босс придёт в понедельник' : 'Ты одолел босса недели. Забирай добычу!'}</div></div></div>
-      ${b.claimed ? '' : `<button type="button" class="btn epic" style="margin-top:4px" data-act="claimBoss">🎁 Открыть сундук · +120 XP · +60 💰</button>`}
+      <div class="bhead"><div class="bemoji dead">😽<span class="zzz">💤</span></div><div class="grow">
+        <div class="kicker" style="color:#7d9a72">Укрощён! 🐾</div><div class="bname">${b.def.n}</div>
+        <div class="meta">${b.claimed ? 'Мурлычет и спит. В понедельник придёт новый котик' : 'Котик сдался и мурлычет. Забирай награду!'}</div></div></div>
+      ${b.claimed ? '' : `<button type="button" class="btn epic" style="margin-top:4px" data-act="claimBoss">🐟 Забрать награду · +120 XP · +60 💰</button>`}
     </div>`;
   }
   return `<div class="card boss">
     <div class="bhead"><div class="bemoji">${b.def.e}</div><div class="grow">
-      <div class="kicker">Босс недели · ${b.daysLeft ? `ещё ${b.daysLeft} ${plural(b.daysLeft, 'день', 'дня', 'дней')}` : 'последний день!'}</div>
+      <div class="kicker">Котобосс недели · ${b.daysLeft ? `ещё ${b.daysLeft} ${plural(b.daysLeft, 'день', 'дня', 'дней')}` : 'последний день!'}</div>
       <div class="bname">${b.def.n}</div><div class="meta">${b.def.d}</div></div></div>
-    <div class="hpbar"><i style="width:${pct.toFixed(1)}%"></i><span>❤️ ${b.left} / ${b.hp} HP</span></div>
-    <div class="bnote">Каждое выполненное дело бьёт босса на столько, сколько опыта ты получаешь</div>
+    <div class="hpbar"><i style="width:${pct.toFixed(1)}%"></i><span>🐾 упрямство ${b.left} / ${b.hp}</span></div>
+    <div class="bnote">Каждое выполненное дело укрощает котика — на столько, сколько опыта ты получаешь</div>
   </div>`;
 }
 function questList(qs) {
@@ -1201,11 +1205,11 @@ function viewOnboarding() {
   return `<div class="onb">
     <div class="onb-hero">🎀</div>
     <h1>Твоё приключение начинается</h1>
-    <p class="meta">Превращай дела в подвиги. Прокачивай героя, побеждай боссов и трать золото на настоящие награды.</p>
+    <p class="meta">Превращай дела в подвиги. Прокачивай героя, укрощай котобоссов и трать золото на настоящие награды.</p>
     <div class="feat">
       <div><b>⚔️</b>Задачи дают опыт и золото</div>
       <div><b>🔥</b>Серии привычек усиливают награду</div>
-      <div><b>🐉</b>Каждую неделю — новый босс</div>
+      <div><b>🐈</b>Каждую неделю — новый котобосс</div>
       <div><b>🎁</b>Квесты дня, трофеи и лавка наград</div>
     </div>
     <form data-form="hero">
@@ -1230,7 +1234,7 @@ function viewCamp(g) {
   const tip = !S.tipSeen ? `<div class="card tip"><button type="button" class="x" data-act="dismissTip">×</button><b>📜 Как играть</b><ul>
       <li>Задача даёт <b>10–25 XP</b> и золото (больше за важные)</li>
       <li>Привычка — <b>6 XP + бонус за серию</b> до +14</li>
-      <li>Весь опыт за неделю — это урон по <b>боссу</b></li>
+      <li>Весь опыт за неделю — укрощает <b>котобосса</b></li>
       <li>Выполняй <b>квесты дня</b> и забирай награду</li>
       <li>Золото трать в <b>лавке</b> на свои реальные награды</li></ul></div>` : '';
   return `${heroCard(g)}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
@@ -1342,7 +1346,7 @@ function viewTasks() {
     const tod = open.filter(t => t.due === T).sort(byPrio);
     const doneT = S.tasks.filter(t => t.done && t.doneAt === T);
     html += group('Просрочено', over, 'over') + group('Сегодня', tod) + group('Сделано сегодня', doneT);
-    if (!over.length && !tod.length && !doneT.length) html += `<div class="card empty"><div class="big">☀️</div>На сегодня задач нет. Добавь — и бей босса!</div>`;
+    if (!over.length && !tod.length && !doneT.length) html += `<div class="card empty"><div class="big">☀️</div>На сегодня задач нет. Добавь — и укрощай котика!</div>`;
   } else if (f === 'upcoming' || f === 'all') {
     if (f === 'all') html += group('Просрочено', open.filter(t => t.due && t.due < T).sort(byPrio), 'over');
     const dated = open.filter(t => t.due && (f === 'all' ? t.due >= T : t.due > T));
@@ -1405,7 +1409,7 @@ function viewHero(g) {
     <div class="row"><button type="button" class="btn alt" style="margin:0;padding:4px" data-act="newReward">+ Своя награда</button></div>
   </div>
   ${S.purchases.length ? `<div class="meta" style="margin:-4px 4px 12px">Последнее: ${S.purchases.slice(-3).reverse().map(p => `${p.emoji} ${esc(p.title)}`).join(' · ')}</div>` : ''}
-  ${slain.length ? `<div class="sec"><span class="tape">Поверженные боссы · ${slain.length}</span></div><div class="card slain">${slain.map(([, b]) => `<span title="${BOSSES[b.idx].n}">${BOSSES[b.idx].e}</span>`).join('')}</div>` : ''}
+  ${slain.length ? `<div class="sec"><span class="tape">Укрощённые котики · ${slain.length}</span></div><div class="card slain">${slain.map(([, b]) => `<span title="${BOSSES[b.idx].n}">${BOSSES[b.idx].e}</span>`).join('')}</div>` : ''}
   <div class="sec"><span class="tape">Трофеи</span> <span class="r">${got}/${ACH.length}</span></div>
   <div class="trophies">${ACH.map(x => `<div class="trophy ${S.ach[x.id] ? '' : 'locked'}"><div class="ti">${x.i}</div><b>${x.n}</b><span>${x.d}${S.ach[x.id] ? '' : ` · ${x.g} 💰`}</span></div>`).join('')}</div>`;
 }
@@ -2029,7 +2033,7 @@ function createHero(f, demo) {
   checkAch(); // уже заработанное — без фанфар
   save(); render();
   haptic.ok(); confetti(60);
-  setTimeout(() => toast(S.hero.avatar, `Добро пожаловать, ${esc(name)}!`, 'Первый босс уже ждёт в Лагере'), 300);
+  setTimeout(() => toast(S.hero.avatar, `Добро пожаловать, ${esc(name)}!`, 'Первый котобосс уже ждёт в Лагере'), 300);
 }
 
 const A = {
@@ -2228,8 +2232,8 @@ const A = {
     if (!g.boss.dead || g.boss.claimed) return;
     change(ev, () => { const b = S.bosses[g.boss.wk]; b.claimed = true; b.reward = { xp: 120, gold: 60 }; });
     haptic.heavy(); confetti(120);
-    modal(`<div class="big">🎁</div><div class="kick">ДОБЫЧА</div><h2>${g.boss.def.n} повержен</h2>
-      <div class="meta">Неделя за тобой. В понедельник появится новый враг.</div>
+    modal(`<div class="big">😽</div><div class="kick">КОТИК УКРОЩЁН</div><h2>${g.boss.def.n}</h2>
+      <div class="meta">Теперь мурлычет у тебя на коленях. В понедельник придёт новый котик.</div>
       <div class="rewards"><span style="color:var(--xp)">+120 XP</span><span style="color:var(--gold)">+60 💰</span></div>`);
   },
   async buy(d, el, ev) {
