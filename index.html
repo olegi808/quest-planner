@@ -653,7 +653,7 @@ form.gtype-year .only-month{display:none}
 .r532 .bar{position:relative;height:9px;overflow:visible}
 .r532 .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.35;border-radius:1px}
 .r532 small{color:var(--ink2);font-size:11px}
-.tab{font-size:13px}
+.tab{font-size:14px}
 .tab svg{width:21px;height:21px}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
@@ -1433,7 +1433,13 @@ function viewHabits() {
   }).join('');
 }
 
+// Вкладка «Герой»: профиль героя и хроники (статистика) в одном разделе
 function viewHero(g) {
+  const seg = `<div class="seg">${[['hero', '🛡️ Профиль'], ['stats', '📊 Хроники']].map(([k, l]) => `<button type="button" class="${(ui.heroMode || 'hero') === k ? 'on' : ''}" data-act="heroMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if (ui.heroMode === 'stats') return seg + viewStats(g);
+  return seg + viewProfile(g);
+}
+function viewProfile(g) {
   const a = g.all;
   const slain = Object.entries(S.bosses).filter(([, b]) => b.claimed).sort(([x], [y]) => x.localeCompare(y));
   const got = Object.keys(S.ach).length;
@@ -2109,7 +2115,7 @@ const ICONS = {
   goals: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
   money: '<rect x="2.5" y="6.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19M16 14.5h2.5M5.5 6.5l9.5-3.5 1.5 3.5"/>',
 };
-const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['money', 'Деньги'], ['hero', 'Герой'], ['stats', 'Хроники']];
+const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['money', 'Деньги'], ['hero', 'Герой']];
 const app = document.getElementById('app');
 const fab = document.getElementById('fab');
 const tabbar = document.getElementById('tabbar');
@@ -2422,6 +2428,7 @@ const A = {
     t.done ? haptic.ok() : haptic.tap();
     refreshSheets();
   },
+  heroMode(d) { ui.heroMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
   goalMode(d) { ui.goalMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
   wheelHint(d) { ui.wheelHint = ui.wheelHint === d.v ? null : d.v; haptic.sel(); render(); },
   newGoal(d) { goalEditSheet(null, d.v); },
