@@ -614,6 +614,44 @@ form.gtype-year .only-month{display:none}
 .whint{grid-column:1/-1;background:color-mix(in srgb,var(--c) 16%,var(--paper2));border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.4;margin-top:-2px}
 .whint-s{margin-top:5px;font-family:var(--hand);font-size:17px;color:var(--ink2)}
 .whint-s b{font-size:18px}
+/* финансы */
+.fin-input{padding:10px 10px 10px 14px;background:var(--pink2)!important;transform:rotate(-.3deg)}
+.fin-in-row{display:flex;gap:8px;align-items:center}
+.fin-in-row input{flex:1;min-width:0;border:0;background:var(--paper2);border-radius:12px;padding:11px 12px;font:inherit;font-size:15px;color:var(--text);outline:none}
+.fin-prev{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:22px}
+.fin-prev .meta{font-family:var(--hand);font-size:17px}
+.fin-chip{background:var(--paper2);border-left:4px solid var(--c);border-radius:8px;padding:4px 8px;font-size:12.5px}
+.fin-chip b{font-weight:800}.fin-chip.inc b{color:#6f9364}
+.fin-chip i{color:var(--ink2);font-style:normal}
+.fin-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.fin-sum span{display:block;font-size:12px;color:var(--ink2)}
+.fin-sum b{font-family:var(--hand);font-size:27px;font-weight:700;line-height:1.1}
+.fin-sum b.inc,.inc{color:#6f9364}
+.fin-sum b.neg{color:var(--danger)}
+.fin-rate b{font-family:inherit;font-size:inherit;font-weight:800;color:var(--ink)}
+.fin-rate{grid-column:1/-1;font-size:13px;color:var(--ink2);border-top:1px dashed var(--sep);padding-top:8px;margin-top:4px}
+.fin-ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px;background:color-mix(in srgb,var(--c) 35%,var(--paper2))}
+.fin-ic.sm{width:34px;height:34px;font-size:16px}
+.fin-amt{font-weight:800;font-size:14.5px;white-space:nowrap}
+.fin-amt.inc{color:#6f9364}
+.donut{width:170px;height:170px;display:block;margin:0 auto 6px}
+.dn-bg{fill:none;stroke:rgba(150,110,115,.08);stroke-width:22}
+.dn-t{font-family:var(--hand);font-size:22px;font-weight:700;fill:var(--ink)}
+.dn-l{font-size:9px;fill:var(--ink2)}
+.fin-cats .fin-cat,.card>.fin-cat{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px dashed var(--sep)}
+.fin-cats .fin-cat:first-child{border-top:0}
+.fin-cat .bar{margin:4px 0 3px;height:6px}
+.fin-filter{margin-bottom:4px}
+.fin-tips{padding:6px 14px}
+.fin-tip{display:flex;gap:10px;padding:9px 0;font-size:13.5px;line-height:1.4;border-top:1px dashed var(--sep)}
+.fin-tip:first-child{border-top:0}
+.fin-tip span{font-size:18px;flex:none}
+.r532{margin:8px 0}
+.r532 .bar{position:relative;height:9px;overflow:visible}
+.r532 .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.35;border-radius:1px}
+.r532 small{color:var(--ink2);font-size:11px}
+.tab{font-size:13px}
+.tab svg{width:21px;height:21px}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
 </head>
@@ -754,10 +792,12 @@ const ACH = [
   { id: 'wheel1', i: '🎡', n: 'Взгляд на себя', d: 'Заполни колесо баланса', g: 15, ok: s => s.wheels >= 1 },
   { id: 'asc1', i: '⛰️', n: 'Сила воли', d: 'Заверши первую аскезу', g: 40, ok: s => s.ascDone >= 1 },
   { id: 'asc3', i: '🛡️', n: 'Железный характер', d: 'Заверши 3 аскезы', g: 100, ok: s => s.ascDone >= 3 },
+  { id: 'fin7', i: '🧾', n: 'Счетовод', d: '7 дней учёта финансов', g: 20, ok: s => s.finDays >= 7 },
+  { id: 'fin30', i: '📒', n: 'Финансист', d: '30 дней учёта финансов', g: 60, ok: s => s.finDays >= 30 },
 ];
 
 /* ================= state & storage ================= */
-const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false, goals: [], weekFocus: {}, wheel: [], asc: [] });
+const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false, goals: [], weekFocus: {}, wheel: [], asc: [], fin: [], finRules: {}, finBudgets: {} });
 let S = blank();
 const ui = { tab: 'camp', taskFilter: 'today', statRange: 7, home: null, taskMode: 'cal', calDay: null };
 const fmtTime = s => s ? s.replace(/^0(\d)/, '$1') : '';
@@ -956,6 +996,9 @@ function computeAll() {
   }
   // колесо баланса: +20 XP за оценку, не чаще раза в неделю
   xp += new Set(S.wheel.map(w => weekStart(w.d))).size * 20;
+  // финансы: +5 XP за каждый день, когда вёлся учёт
+  const finDays = new Set(S.fin.map(o => o.d));
+  finDays.forEach(d => { xp += 5; gold += 1; add(d, 5); });
   // аскезы
   let ascDone = 0;
   for (const a of S.asc) {
@@ -964,7 +1007,7 @@ function computeAll() {
   }
   const spent = S.purchases.reduce((a, p) => a + p.cost, 0);
   gold -= spent;
-  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, goalsDone, wheels: S.wheel.length, ascDone, ...levelInfo(xp) };
+  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, goalsDone, wheels: S.wheel.length, ascDone, finDays: finDays.size, ...levelInfo(xp) };
 }
 function bossState(all) {
   const T = today(), wk = weekStart(T);
@@ -1767,6 +1810,292 @@ function viewWheel() {
       <div class="grow">${fmtDate(w.d)}</div><span class="meta">${AREAS.map(a => a.e + (w.s[a.id] || 0)).join(' ')}</span><b style="margin-left:8px">${wheelAvg(w.s).toFixed(1)}</b></div>`).join('')}</div>` : ''}`;
 }
 
+/* ================= финансы ================= */
+// Категории: k — начала слов, по которым строка сама относится к категории (побеждает самое длинное совпадение)
+const FIN_EXP = [
+  { id: 'food', e: '🛒', n: 'Продукты', c: '#a8c39c', need: 1, k: ['продукт', 'пятероч', 'пятёроч', 'перекрест', 'перекрёст', 'магнит', 'ашан', 'лента', 'вкусвилл', 'азбука', 'дикси', 'окей', 'спар', 'metro', 'метро кэш', 'самокат', 'лавка', 'супермаркет', 'гипермаркет', 'рынок', 'еда домой', 'овощ', 'фрукт', 'молок', 'хлеб', 'мясо', 'курица', 'сыр', 'яйц', 'крупа', 'макарон', 'вода питьев', 'fix price', 'фикс прайс', 'светофор', 'бристоль', 'красное белое', 'продукты'] },
+  { id: 'cafe', e: '☕', n: 'Кафе и доставка', c: '#e2bd8c', k: ['кофе', 'капуч', 'латте', 'раф', 'кафе', 'ресторан', 'бар', 'паб', 'обед', 'ужин', 'завтрак', 'ланч', 'бизнес-ланч', 'пицц', 'суши', 'ролл', 'бургер', 'шаурм', 'шаверм', 'донер', 'доставк', 'яндекс еда', 'деливери', 'delivery', 'макдо', 'вкусно и точка', 'kfc', 'кфс', 'ростикс', 'бургер кинг', 'старбакс', 'кофейн', 'столов', 'пекарн', 'выпечк', 'круассан', 'пончик', 'мороженое', 'чай с собой', 'фастфуд', 'перекус', 'снек'] },
+  { id: 'transport', e: '🚕', n: 'Транспорт', c: '#9cc0d4', need: 1, k: ['такси', 'метро', 'автобус', 'трамва', 'троллейб', 'маршрутк', 'транспорт', 'бензин', 'заправк', 'азс', 'топливо', 'парковк', 'каршер', 'делимобил', 'ситидрайв', 'яндекс драйв', 'электричк', 'проезд', 'тройк', 'подорожник', 'uber', 'убер', 'яндекс го', 'самокат аренд', 'кикшеринг', 'автомойк', 'шиномонтаж', 'то машины', 'штраф'] },
+  { id: 'home', e: '🏠', n: 'Жильё и ЖКХ', c: '#c2b59c', need: 1, k: ['аренд', 'квартир', 'жкх', 'коммунал', 'квартплат', 'электричеств', 'за свет', 'газ', 'за воду', 'ипотек', 'ремонт', 'мебел', 'икеа', 'ikea', 'хозтовар', 'бытов', 'посуд', 'леруа', 'оби', 'домофон', 'уборк', 'химчистк'] },
+  { id: 'bills', e: '📱', n: 'Связь и подписки', c: '#bba7d8', need: 1, k: ['связь', 'телефон', 'мобильн', 'интернет', 'подписк', 'netflix', 'нетфликс', 'кинопоиск', 'иви', 'okko', 'окко', 'spotify', 'спотиф', 'яндекс плюс', 'плюс', 'icloud', 'айклауд', 'youtube', 'ютуб', 'telegram premium', 'телеграм премиум', 'vpn', 'впн', 'apple', 'эпл', 'google one', 'мтс', 'билайн', 'мегафон', 'теле2', 'tele2', 'yota', 'йота', 'ростелеком', 'chatgpt', 'нейросет'] },
+  { id: 'health', e: '💊', n: 'Здоровье', c: '#e8a3ae', need: 1, k: ['аптек', 'лекарств', 'таблетк', 'врач', 'доктор', 'стоматолог', 'зуб', 'анализ', 'клиник', 'больниц', 'витамин', 'массаж', 'психолог', 'психотерап', 'терапевт', 'медицин', 'медосмотр', 'узи', 'мрт', 'очки', 'линзы', 'гемотест', 'инвитро'] },
+  { id: 'beauty', e: '💅', n: 'Красота и уход', c: '#f2b8c6', k: ['маникюр', 'педикюр', 'ногти', 'салон', 'стрижк', 'парикмахер', 'косметик', 'уход', 'крем', 'шампун', 'брови', 'ресниц', 'барбер', 'золотое яблоко', 'летуаль', 'рив гош', 'спа', 'spa', 'эпиляц', 'депиляц', 'окрашиван', 'макияж', 'духи', 'парфюм', 'маска для'] },
+  { id: 'shopping', e: '🛍️', n: 'Покупки', c: '#dc929d', k: ['одежд', 'обувь', 'кроссовк', 'ботинк', 'туфли', 'платье', 'куртк', 'пальто', 'джинс', 'футболк', 'свитер', 'wildberries', 'вайлдберриз', 'вб', 'wb', 'озон', 'ozon', 'маркетплейс', 'алиэкспресс', 'aliexpress', 'яндекс маркет', 'мегамаркет', 'техник', 'наушник', 'гаджет', 'телефон новый', 'ноутбук', 'zara', 'h&m', 'юникло', 'uniqlo', 'gloria jeans', 'lime', 'befree', 'покупк', 'шопинг', 'сумк', 'украшен'] },
+  { id: 'gifts', e: '🎁', n: 'Подарки', c: '#f0c4b0', k: ['подарок', 'подарки', 'цветы', 'букет', 'открытк', 'на день рождени', 'на др', 'сувенир'] },
+  { id: 'fun', e: '🎬', n: 'Развлечения', c: '#e0a98f', k: ['кино', 'театр', 'концерт', 'игр', 'steam', 'стим', 'playstation', 'боулинг', 'клуб', 'музей', 'выставк', 'квест', 'караоке', 'вечеринк', 'развлеч', 'хобби', 'аттракцион', 'парк развл', 'билет на', 'кальян'] },
+  { id: 'sport', e: '🏋️', n: 'Спорт', c: '#9fc3b0', k: ['спортзал', 'зал', 'фитнес', 'тренировк', 'бассейн', 'йог', 'пилатес', 'тренер', 'абонемент', 'спорт', 'бег', 'велосипед', 'танц', 'бокс', 'единоборств'] },
+  { id: 'edu', e: '📚', n: 'Образование', c: '#94bcd3', k: ['курс', 'обучени', 'книг', 'учеб', 'репетитор', 'вебинар', 'урок', 'английск', 'skillbox', 'скиллбокс', 'нетология', 'яндекс практикум', 'литрес', 'бук мейт', 'букмейт', 'канцеляр', 'тетрад'] },
+  { id: 'pets', e: '🐾', n: 'Питомцы', c: '#d4a98e', k: ['корм', 'ветеринар', 'ветклиник', 'зоомагазин', 'зоо', 'наполнител', 'лоток', 'когтеточк', 'для кота', 'для кошки', 'для собаки', 'питом', 'груминг'] },
+  { id: 'travel', e: '✈️', n: 'Путешествия', c: '#a9c8d8', k: ['отел', 'гостиниц', 'хостел', 'путешеств', 'отпуск', 'тур ', 'путёвк', 'путевк', 'airbnb', 'суточн', 'букинг', 'booking', 'виза', 'авиабилет', 'самолет', 'самолёт', 'перелет', 'перелёт', 'поезд', 'ржд', 'аэропорт', 'экскурс', 'островок'] },
+  { id: 'kids', e: '🧸', n: 'Дети', c: '#f3d38f', need: 1, k: ['ребен', 'ребён', 'детск', 'садик', 'детсад', 'игрушк', 'памперс', 'подгузник', 'школьн', 'кружок', 'секция', 'няня'] },
+  { id: 'debt', e: '💳', n: 'Кредиты и долги', c: '#c9a3a3', need: 1, k: ['кредит', 'долг', 'рассрочк', 'займ', 'микрозайм', 'по карте', 'платёж по', 'платеж по', 'вернул долг'] },
+  { id: 'charity', e: '🤍', n: 'Благотворительность', c: '#d9c4dd', k: ['благотвор', 'донат', 'пожертв', 'фонд', 'помощь'] },
+  { id: 'other', e: '📦', n: 'Другое', c: '#cfc6bb', k: [] },
+];
+const FIN_INC = [
+  { id: 'salary', e: '💼', n: 'Зарплата', c: '#9fbf94', k: ['зп', 'з/п', 'зарплат', 'аванс', 'оклад', 'получк', 'заработн'] },
+  { id: 'side', e: '💻', n: 'Подработка', c: '#a8c7b7', k: ['фриланс', 'подработк', 'халтур', 'заказ от', 'клиент', 'гонорар', 'смена', 'чаевые'] },
+  { id: 'bonus', e: '🎁', n: 'Премии и подарки', c: '#e8c48f', k: ['преми', 'бонус', 'подарили', 'подарок от', 'кэшбэк', 'кешбэк', 'кешбек', 'cashback', 'возврат', 'вернули', 'выигр', 'стипенд'] },
+  { id: 'invest', e: '📈', n: 'Инвестиции', c: '#94bcd3', k: ['дивиденд', 'процент по вклад', 'проценты по вклад', 'проценты на остаток', 'купон', 'вклад', 'инвест', 'акци', 'облигац'] },
+  { id: 'sale', e: '🏷️', n: 'Продажи', c: '#d7b6d9', k: ['продал', 'продала', 'продажа', 'авито', 'avito', 'юла'] },
+  { id: 'inc_other', e: '💰', n: 'Другой доход', c: '#c7d3a5', k: ['доход', 'перевод от', 'перевели', 'пособи', 'пенси', 'алимент', 'налоговый вычет', 'вычет'] },
+];
+const INC_WORDS = ['получил', 'получила', 'пришла', 'пришло', 'пришли', 'заработал', 'заработала', 'поступлен', 'поступило', 'начислил', 'зачислен', 'перевели мне', 'скинули'];
+const finCat = id => FIN_EXP.find(c => c.id === id) || FIN_INC.find(c => c.id === id) || FIN_EXP[FIN_EXP.length - 1];
+const isIncCat = id => FIN_INC.some(c => c.id === id);
+const money = n => (n < 0 ? '−' : '') + Math.round(Math.abs(n)).toLocaleString('ru-RU') + ' ₽';
+const moneyShort = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' млн' : n >= 1e4 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace('.0', '') + ' тыс' : Math.round(n).toLocaleString('ru-RU');
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const capFirst = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+function matchCat(text, list) {
+  let best = null, bl = 0;
+  for (const c of list) for (const k of c.k) {
+    if (k.length <= bl) continue;
+    if (new RegExp('(^|[^а-яёa-z0-9])' + escRe(k)).test(text)) { best = c; bl = k.length; }
+  }
+  return best;
+}
+// Сумма: «250», «80 000», «1,5к», «80к», «2 тыс», «450₽», «300 руб»
+const AMT_SRC = '(?:\\d{1,3}(?:[ \\u00a0]\\d{3})+|\\d+)(?:[.,]\\d{1,2})?(?:(?:к|k)(?![а-яёa-z])|\\s*тыс(?:\\.|яч[аи]?)?(?![а-яёa-z])|\\s*млн(?![а-яёa-z]))?(?:\\s*(?:₽|руб(?:лей|ля|\\.)?|р\\.?)(?![а-яёa-z]))?';
+function amtValue(str) {
+  const low = str.toLowerCase();
+  const mult = /млн/.test(low) ? 1e6 : /(\d\s*(к|k)\b|\dк|\dk|тыс)/.test(low) ? 1e3 : 1;
+  const num = parseFloat(low.replace(/[^\d.,]/g, '').replace(',', '.'));
+  return isNaN(num) ? 0 : Math.round(num * mult * 100) / 100;
+}
+// Главный разбор строки: может содержать несколько операций через запятую или просто подряд
+function parseFin(line) {
+  const T = today();
+  // даты «12.11» заменяем метками без цифр, чтобы их не приняли за суммы
+  const dates = [], L = 'abcdefghijklmnopqrstuvwxyz';
+  // «2 340,50» — запятая внутри суммы это копейки, а не разделитель операций
+  const txt = line.replace(/(\d),(\d{1,2})(?!\d)/g, '$1.$2').replace(/(^|[\s,;])(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?(?=[\s,;]|$)/g, (m, pre, dd, mm, yy) => {
+    if (+mm < 1 || +mm > 12 || +dd < 1 || +dd > 31 || dates.length >= L.length) return m;
+    dates.push([+dd, +mm, yy]); return pre + '⟦' + L[dates.length - 1] + '⟧';
+  });
+  // «кофе 250 такси 400» / «250 кофе 400 такси» → делим только между суммами
+  const splitPart = p => {
+    const ms = [...p.matchAll(new RegExp(AMT_SRC, 'gi'))].filter(m => amtValue(m[0]) > 0);
+    if (ms.length < 2) return [p];
+    const amountFirst = /^\s*[+\-−]?\s*\d/.test(p);
+    const cuts = amountFirst ? ms.slice(1).map(m => m.index) : ms.slice(0, -1).map(m => m.index + m[0].length);
+    const res = []; let prev = 0;
+    cuts.forEach(c => { res.push(p.slice(prev, c)); prev = c; }); res.push(p.slice(prev));
+    return res;
+  };
+  const parts = txt.split(/[,;\n]+/).flatMap(splitPart).map(s => s.trim()).filter(Boolean);
+  const out = []; let pending = '';
+  for (let raw of parts) {
+    let s = (pending ? pending + ' ' : '') + raw; pending = '';
+    let d = T, type = null;
+    if (/^\s*\+/.test(s)) type = 'inc';
+    else if (/^\s*[-−]/.test(s)) type = 'exp';
+    const low0 = s.toLowerCase();
+    if (/позавчера/.test(low0)) d = addDays(T, -2); else if (/вчера/.test(low0)) d = addDays(T, -1);
+    s = s.replace(/позавчера|вчера|сегодня/gi, ' ');
+    const dm = s.match(/⟦([a-z])⟧/);
+    if (dm) {
+      const [dd, mm, yy] = dates[L.indexOf(dm[1])];
+      const y = yy ? (yy.length === 2 ? '20' + yy : yy) : T.slice(0, 4);
+      let cand = `${y}-${pad(mm)}-${pad(dd)}`;
+      if (!yy && cand > T) cand = `${+y - 1}-${pad(mm)}-${pad(dd)}`;
+      d = cand; s = s.replace(dm[0], ' ');
+    }
+    raw = raw.replace(/⟦[a-z]⟧/g, ' ');
+    let best = 0, bestStr = null;
+    for (const m of s.matchAll(new RegExp(AMT_SRC, 'gi'))) { const v = amtValue(m[0]); if (v > best) { best = v; bestStr = m[0]; } }
+    if (!best) { // кусок без суммы: дата/уточнение к предыдущей операции или начало следующей
+      const prev = out[out.length - 1];
+      if (prev && !/\d/.test(raw)) {
+        const l = raw.toLowerCase();
+        if (/позавчера/.test(l)) prev.d = addDays(T, -2); else if (/вчера/.test(l)) prev.d = addDays(T, -1);
+        else if (raw.trim()) prev.note = (prev.note + ' ' + raw.trim()).trim();
+      } else pending = raw;
+      continue;
+    }
+    s = s.replace(bestStr, ' ');
+    const note = s.replace(/^[\s+\-−]+/, '').replace(/\s+/g, ' ').trim();
+    const low = note.toLowerCase();
+    const key = low.split(' ')[0];
+    let cat = null;
+    if (key && S.finRules[key]) { cat = finCat(S.finRules[key]); if (!type) type = isIncCat(cat.id) ? 'inc' : 'exp'; }
+    if (!type) type = matchCat(low, FIN_INC) || INC_WORDS.some(w => low.includes(w)) ? 'inc' : 'exp';
+    if (!cat || isIncCat(cat.id) !== (type === 'inc')) cat = matchCat(low, type === 'inc' ? FIN_INC : FIN_EXP) || finCat(type === 'inc' ? 'inc_other' : 'other');
+    out.push({ d, amt: best, type, cat: cat.id, note: capFirst(note) || cat.n });
+  }
+  return out;
+}
+// Сводка за месяц 'YYYY-MM'
+function finMonthStats(m) {
+  const ops = S.fin.filter(o => o.d.startsWith(m));
+  const inc = ops.filter(o => o.type === 'inc').reduce((a, o) => a + o.amt, 0);
+  const exp = ops.filter(o => o.type === 'exp').reduce((a, o) => a + o.amt, 0);
+  const byCat = {};
+  ops.filter(o => o.type === 'exp').forEach(o => { const c = byCat[o.cat] || (byCat[o.cat] = { v: 0, n: 0 }); c.v += o.amt; c.n++; });
+  return { ops, inc, exp, byCat };
+}
+const shiftMonth = (m, n) => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+function donut(items, total) {
+  const R = 50, L = 2 * Math.PI * R; let off = 0;
+  let s = `<svg viewBox="0 0 140 140" class="donut"><circle cx="70" cy="70" r="${R}" class="dn-bg"/>`;
+  items.forEach(it => {
+    const len = it.v / total * L;
+    s += `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${it.c}" stroke-width="22" stroke-dasharray="${Math.max(len - 1.6, .1).toFixed(2)} ${L.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 70 70)"/>`;
+    off += len;
+  });
+  return s + `<text x="70" y="68" class="dn-t" text-anchor="middle">${moneyShort(total)}</text><text x="70" y="86" class="dn-l" text-anchor="middle">₽ расходы</text></svg>`;
+}
+function finRow(o) {
+  const c = finCat(o.cat);
+  return `<div class="row fin-row tap" data-act="finEdit" data-id="${o.id}">
+    <div class="fin-ic" style="--c:${c.c}">${c.e}</div>
+    <div class="grow"><div class="ttl">${esc(o.note)}</div><div class="meta">${c.n}</div></div>
+    <b class="fin-amt ${o.type}">${o.type === 'inc' ? '+' : '−'}${money(o.amt)}</b>
+  </div>`;
+}
+// Советы по оптимизации на основе месяца и прошлого месяца
+function finInsights(m, st, pv) {
+  const T = today(), out = [];
+  const isCur = m === T.slice(0, 7);
+  const dim = new Date(+m.slice(0, 4), +m.slice(5), 0).getDate();
+  const passed = isCur ? +T.slice(8) : dim;
+  if (isCur && st.exp && passed < dim) {
+    const fc = st.exp / passed * dim;
+    out.push(['🔮', `Прогноз: к концу месяца расходы составят около <b>${money(fc)}</b>${pv.exp ? ` — это ${fc > pv.exp ? 'больше' : 'меньше'}, чем в прошлом месяце (${money(pv.exp)})` : ''}.`]);
+  }
+  const cats = Object.entries(st.byCat).sort((a, b) => b[1].v - a[1].v);
+  if (cats.length && st.exp) { const [id, v] = cats[0]; out.push(['🥧', `Больше всего уходит на <b>${finCat(id).e} ${finCat(id).n}</b> — ${Math.round(v.v / st.exp * 100)}% всех трат.`]); }
+  cats.forEach(([id, v]) => {
+    const p = pv.byCat[id];
+    if (p && p.v > 0 && v.v - p.v > 1000 && v.v / p.v > 1.2) out.push(['📈', `<b>${finCat(id).e} ${finCat(id).n}</b>: +${Math.round((v.v / p.v - 1) * 100)}% к прошлому месяцу (+${money(v.v - p.v)}).`]);
+  });
+  cats.forEach(([id, v]) => {
+    if (['cafe', 'shopping', 'fun', 'transport', 'beauty'].includes(id) && v.n >= 6 && v.v / v.n < 800) {
+      const year = v.v / passed * 365;
+      out.push([finCat(id).e, `${v.n} мелких покупок в «${finCat(id).n}» на ${money(v.v)}. Если сократить их вдвое, сэкономишь ~${money(year / 2)} за год.`]);
+    }
+  });
+  if (st.byCat.bills) out.push(['📱', `Связь и подписки — ${money(st.byCat.bills.v)} в месяц. Пройдись по списку: всем ли пользуешься?`]);
+  Object.entries(S.finBudgets).forEach(([id, lim]) => {
+    const v = (st.byCat[id] || { v: 0 }).v;
+    if (v > lim) out.push(['🚨', `<b>${finCat(id).e} ${finCat(id).n}</b>: лимит превышен на ${money(v - lim)}.`]);
+    else if (v > lim * .8) out.push(['⚠️', `<b>${finCat(id).e} ${finCat(id).n}</b>: потрачено ${Math.round(v / lim * 100)}% лимита — осталось ${money(lim - v)}.`]);
+  });
+  if (st.inc) {
+    const rate = (st.inc - st.exp) / st.inc;
+    if (rate < 0) out.push(['🧯', `Расходы больше доходов на ${money(st.exp - st.inc)}. Начни с самой крупной необязательной категории.`]);
+    else if (rate < .1) out.push(['🐷', `Откладываешь ${Math.round(rate * 100)}% дохода. Попробуй правило «сначала заплати себе»: переводи 10% сразу после зарплаты.`]);
+    else if (rate >= .2) out.push(['🏆', `Откладываешь ${Math.round(rate * 100)}% дохода — это отличный результат!`]);
+  }
+  return out;
+}
+function viewMoney() {
+  const T = today();
+  const m = ui.finMonth || T.slice(0, 7);
+  const st = finMonthStats(m), pv = finMonthStats(shiftMonth(m, -1));
+  const tab = ui.finTab || 'over';
+  const [y, mm] = m.split('-').map(Number);
+  const bal = st.inc - st.exp;
+  let html = `<form class="card fin-input" data-form="fin">
+      <div class="fin-in-row"><input id="finInput" name="line" placeholder="кофе 250, такси 450 вчера, зп 80к" autocomplete="off" enterkeyhint="done"><button class="iconbtn" aria-label="Добавить">+</button></div>
+      <div id="finPreview" class="fin-prev"><span class="meta">Пиши как в заметках — я сам разложу по категориям ✨</span></div>
+    </form>
+    <div class="pnav"><button type="button" data-act="finMonth" data-v="-1" aria-label="Прошлый месяц">‹</button><b>${MONTHS_N[mm - 1]} ${y}</b>
+      <button type="button" data-act="finMonth" data-v="1" ${m >= T.slice(0, 7) ? 'disabled' : ''} aria-label="Следующий месяц">›</button></div>
+    <div class="card fin-sum">
+      <div><span>Доходы</span><b class="inc">+${moneyShort(st.inc)}</b></div>
+      <div><span>Расходы</span><b>−${moneyShort(st.exp)}</b></div>
+      <div><span>Остаток</span><b class="${bal < 0 ? 'neg' : ''}">${bal < 0 ? '−' : ''}${moneyShort(Math.abs(bal))}</b></div>
+      ${st.inc ? `<div class="fin-rate">${bal >= 0 ? `🐷 Откладываешь <b>${Math.round(bal / st.inc * 100)}%</b> дохода` : '🧯 Расходы больше доходов'}</div>` : ''}
+    </div>
+    <div class="seg">${[['over', 'Обзор'], ['ops', 'Операции'], ['tips', 'Советы']].map(([k, l]) => `<button type="button" class="${tab === k ? 'on' : ''}" data-act="finTab" data-v="${k}">${l}</button>`).join('')}</div>`;
+
+  if (!S.fin.length) return html + `<div class="card empty"><div class="big">🐷</div><b>Здесь будет учёт финансов</b><p class="meta">Просто напиши в строке выше, например: «продукты 1840, кофе 250, зп 80000». Сумма, категория, доход или расход и дата определятся сами.</p></div>`;
+
+  if (tab === 'over') {
+    const cats = Object.entries(st.byCat).sort((a, b) => b[1].v - a[1].v);
+    const dim = new Date(y, mm, 0).getDate();
+    const days = Array.from({ length: dim }, (_, i) => `${m}-${pad(i + 1)}`).filter(d => d <= T);
+    const dv = days.map(d => S.fin.filter(o => o.d === d && o.type === 'exp').reduce((a, o) => a + o.amt, 0));
+    html += cats.length ? `<div class="card"><div class="ctitle"><b>Куда уходят деньги</b><span class="meta">${cats.length} ${plural(cats.length, 'категория', 'категории', 'категорий')}</span></div>
+      ${donut(cats.map(([id, v]) => ({ c: finCat(id).c, v: v.v })), st.exp)}
+      <div class="fin-cats">${cats.map(([id, v]) => {
+        const c = finCat(id), lim = S.finBudgets[id], p = pv.byCat[id];
+        return `<div class="fin-cat tap" data-act="finCatSheet" data-id="${id}">
+          <div class="fin-ic sm" style="--c:${c.c}">${c.e}</div>
+          <div class="grow"><div class="hs-top"><b>${c.n}</b><span>${money(v.v)}</span></div>
+            <div class="bar"><i style="width:${lim ? Math.min(100, v.v / lim * 100) : v.v / cats[0][1].v * 100}%;background:${lim && v.v > lim ? 'var(--danger)' : c.c}"></i></div>
+            <div class="meta">${Math.round(v.v / st.exp * 100)}% · ${v.n} ${plural(v.n, 'покупка', 'покупки', 'покупок')}${lim ? ` · лимит ${moneyShort(lim)}` : ''}${p && Math.round((v.v / p.v - 1) * 100) ? ` · ${v.v >= p.v ? '▲' : '▼'} ${Math.abs(Math.round((v.v / p.v - 1) * 100))}% к прошлому` : ''}</div></div></div>`;
+      }).join('')}</div></div>` : `<div class="card empty">В этом месяце расходов пока нет</div>`;
+    if (days.length > 1) html += `<div class="card"><div class="ctitle"><b>Траты по дням</b><span class="meta">≈ ${money(st.exp / days.length)} в день</span></div>
+      ${bars(dv, days.map(d => String(+d.slice(8))), 'var(--rose)', { days, act: 'finDay', avg: st.exp / days.length, fmtAvg: v => moneyShort(v) })}</div>`;
+    const inc = st.ops.filter(o => o.type === 'inc');
+    if (inc.length) {
+      const bi = {}; inc.forEach(o => { bi[o.cat] = (bi[o.cat] || 0) + o.amt; });
+      html += `<div class="card"><div class="ctitle"><b>Источники дохода</b></div>${Object.entries(bi).sort((a, b) => b[1] - a[1]).map(([id, v]) => `<div class="fin-cat"><div class="fin-ic sm" style="--c:${finCat(id).c}">${finCat(id).e}</div><div class="grow"><div class="hs-top"><b>${finCat(id).n}</b><span class="inc">+${money(v)}</span></div><div class="bar"><i style="width:${v / st.inc * 100}%;background:${finCat(id).c}"></i></div></div></div>`).join('')}</div>`;
+    }
+  } else if (tab === 'ops') {
+    let ops = st.ops.slice();
+    if (ui.finType) ops = ops.filter(o => o.type === ui.finType);
+    if (ui.finCat) ops = ops.filter(o => o.cat === ui.finCat);
+    if (ui.finDay) ops = ops.filter(o => o.d === ui.finDay);
+    ops.sort((a, b) => b.d.localeCompare(a.d) || (b.ts || 0) - (a.ts || 0));
+    html += `<div class="chips fin-filter">${[['', 'Все'], ['exp', 'Расходы'], ['inc', 'Доходы']].map(([k, l]) => `<button type="button" class="chip ${(ui.finType || '') === k ? 'on' : ''}" data-act="finType" data-v="${k}">${l}</button>`).join('')}
+      ${ui.finCat ? `<button type="button" class="chip on" data-act="finClear" data-v="cat">${finCat(ui.finCat).e} ${finCat(ui.finCat).n} ×</button>` : ''}
+      ${ui.finDay ? `<button type="button" class="chip on" data-act="finClear" data-v="day">${fmtDate(ui.finDay)} ×</button>` : ''}</div>`;
+    const dates = [...new Set(ops.map(o => o.d))];
+    html += dates.map(d => {
+      const dayOps = ops.filter(o => o.d === d);
+      const de = dayOps.filter(o => o.type === 'exp').reduce((a, o) => a + o.amt, 0);
+      return `<div class="sec"><span class="tape">${fmtDate(d)}</span>${de ? `<span class="r">−${money(de)}</span>` : ''}</div><div class="list">${dayOps.map(finRow).join('')}</div>`;
+    }).join('') || `<div class="card empty">Операций не найдено</div>`;
+  } else {
+    const tips = finInsights(m, st, pv);
+    html += `<div class="sec"><span class="tape">Оптимизация</span></div>
+      ${tips.length ? `<div class="card fin-tips">${tips.map(([i, t]) => `<div class="fin-tip"><span>${i}</span><div>${t}</div></div>`).join('')}</div>` : `<div class="card empty">Добавь побольше операций — и здесь появятся советы</div>`}`;
+    if (st.inc) {
+      const need = Object.entries(st.byCat).filter(([id]) => finCat(id).need).reduce((a, [, v]) => a + v.v, 0);
+      const want = st.exp - need, save = Math.max(0, st.inc - st.exp);
+      const row = (l, v, target, c) => `<div class="r532"><div class="hs-top"><b>${l}</b><span>${Math.round(v / st.inc * 100)}% <small>/ цель ${target}%</small></span></div>
+        <div class="bar"><i style="width:${Math.min(100, v / st.inc * 100)}%;background:${c}"></i><u style="left:${target}%"></u></div></div>`;
+      html += `<div class="card"><div class="ctitle"><b>Правило 50/30/20</b></div>
+        ${row('🏠 Обязательное', need, 50, '#9cc0d4')}${row('🎈 Желания', want, 30, '#e8a3ae')}${row('🐷 Накопления', save, 20, '#a8c39c')}
+        <div class="meta" style="margin-top:8px">Ориентир: половина дохода — на обязательное (жильё, еда, транспорт), 30% — на радости, 20% — в копилку.</div></div>`;
+    }
+    const lims = Object.entries(S.finBudgets);
+    html += `<div class="sec"><span class="tape">Лимиты на месяц</span></div>
+      <div class="card">${lims.length ? lims.map(([id, lim]) => { const v = (st.byCat[id] || { v: 0 }).v, c = finCat(id); return `<div class="fin-cat tap" data-act="finCatSheet" data-id="${id}"><div class="fin-ic sm" style="--c:${c.c}">${c.e}</div><div class="grow"><div class="hs-top"><b>${c.n}</b><span>${money(v)} / ${moneyShort(lim)}</span></div><div class="bar"><i style="width:${Math.min(100, v / lim * 100)}%;background:${v > lim ? 'var(--danger)' : c.c}"></i></div></div></div>`; }).join('')
+        : '<div class="meta">Нажми на категорию в «Обзоре», чтобы задать лимит — я буду предупреждать, когда он близко.</div>'}</div>`;
+  }
+  return html;
+}
+function finEditSheet(id) {
+  const o = S.fin.find(x => x.id === id); if (!o) return;
+  const list = o.type === 'inc' ? FIN_INC : FIN_EXP;
+  openSheet('Операция', `<form data-form="finEdit" data-id="${o.id}">
+    <input type="hidden" name="type" value="${o.type}"><input type="hidden" name="cat" value="${o.cat}">
+    <div class="field"><input name="note" value="${esc(o.note)}" maxlength="80" placeholder="Описание"></div>
+    <div class="seg">${[['exp', 'Расход'], ['inc', 'Доход']].map(([k, l]) => `<button type="button" class="${o.type === k ? 'on' : ''}" data-act="finEditType" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="chips"><input type="number" name="amt" value="${o.amt}" min="0" step="0.01" class="numin" style="width:130px"> <span class="meta">₽</span> <input type="date" name="d" value="${o.d}" class="numin" style="width:auto"></div>
+    <div class="lbl">Категория — запомню для похожих записей</div>
+    <div class="chips">${list.map(c => `<button type="button" class="chip ${c.id === o.cat ? 'on' : ''}" data-act="pick" data-name="cat" data-v="${c.id}">${c.e} ${c.n}</button>`).join('')}</div>
+    <button class="btn">Сохранить</button>
+    <button type="button" class="btn ghost" data-act="finDel" data-id="${o.id}">Удалить операцию</button>
+  </form>`);
+}
+function finCatSheet(id) {
+  const c = finCat(id), T = today(), m = ui.finMonth || T.slice(0, 7);
+  const hist = [0, -1, -2].map(k => { const mm = shiftMonth(m, k); return [mm, finMonthStats(mm).byCat[id] || { v: 0, n: 0 }]; });
+  openSheet(`${c.e} ${c.n}`, `<form data-form="finBudget" data-id="${id}">
+    <div class="card">${hist.map(([mm, v]) => `<div class="hs-top"><span>${MONTHS_N[+mm.slice(5) - 1]}</span><b>${money(v.v)} · ${v.n} шт.</b></div>`).join('')}</div>
+    <div class="lbl">Лимит на месяц (пусто — без лимита)</div>
+    <div class="field"><input type="number" name="lim" min="0" step="100" value="${S.finBudgets[id] || ''}" placeholder="Например, 8000"></div>
+    <button class="btn">Сохранить лимит</button>
+    <button type="button" class="btn alt" data-act="finShowCat" data-id="${id}">Показать операции</button>
+  </form>`);
+}
+
 /* ================= render ================= */
 const ICONS = {
   camp: '<path d="M3 20.5h18M12 3.5 3.8 20.5M12 3.5l8.2 17M12 12.5l-3.2 8M12 12.5l3.2 8"/>',
@@ -1775,8 +2104,9 @@ const ICONS = {
   hero: '<path d="M12 3 20 6v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z"/><path d="m9 12 2 2 4-4"/>',
   stats: '<path d="M4 20V11M10 20V5M16 20v-6M21.5 20h-19"/>',
   goals: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
+  money: '<rect x="2.5" y="6.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19M16 14.5h2.5M5.5 6.5l9.5-3.5 1.5 3.5"/>',
 };
-const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['hero', 'Герой'], ['stats', 'Хроники']];
+const TABS = [['camp', 'Лагерь'], ['tasks', 'Задачи'], ['habits', 'Привычки'], ['goals', 'Цели'], ['money', 'Деньги'], ['hero', 'Герой'], ['stats', 'Хроники']];
 const app = document.getElementById('app');
 const fab = document.getElementById('fab');
 const tabbar = document.getElementById('tabbar');
@@ -1791,10 +2121,10 @@ function render() {
   document.body.classList.remove('onboarding');
   tabbar.classList.remove('hidden');
   const g = game();
-  app.innerHTML = ({ camp: viewCamp, tasks: viewTasks, habits: viewHabits, goals: viewGoals, hero: viewHero, stats: viewStats })[ui.tab](g);
+  app.innerHTML = ({ camp: viewCamp, tasks: viewTasks, habits: viewHabits, goals: viewGoals, money: viewMoney, hero: viewHero, stats: viewStats })[ui.tab](g);
   tabbar.innerHTML = TABS.map(([k, l]) =>
     `<button type="button" class="tab ${ui.tab === k ? 'on' : ''}" data-act="tab" data-v="${k}"><svg viewBox="0 0 24 24">${ICONS[k]}</svg>${l}</button>`).join('');
-  fab.classList.toggle('hidden', ui.tab === 'stats' || ui.tab === 'hero' || ui.tab === 'goals');
+  fab.classList.toggle('hidden', ui.tab === 'stats' || ui.tab === 'hero' || ui.tab === 'goals' || ui.tab === 'money');
 }
 
 /* ================= sheets ================= */
@@ -2143,6 +2473,27 @@ const A = {
     S.weekFocus[wk] = (S.weekFocus[wk] || []).filter(x => x.id !== d.id); save(); render();
   },
   newAsc() { ascSheet(null); },
+  finTab(d) { ui.finTab = d.v; haptic.sel(); render(); },
+  finMonth(d) { ui.finMonth = shiftMonth(ui.finMonth || today().slice(0, 7), +d.v); ui.finDay = null; haptic.sel(); render(); },
+  finType(d) { ui.finType = d.v || null; haptic.sel(); render(); },
+  finClear(d) { if (d.v === 'cat') ui.finCat = null; else ui.finDay = null; haptic.sel(); render(); },
+  finDay(d) { ui.finTab = 'ops'; ui.finDay = d.day; ui.finCat = null; haptic.sel(); render(); window.scrollTo(0, 0); },
+  finEdit(d) { haptic.sel(); finEditSheet(d.id); },
+  finCatSheet(d) { haptic.sel(); finCatSheet(d.id); },
+  finShowCat(d) { closeSheet(); ui.finTab = 'ops'; ui.finCat = d.id; ui.finDay = null; render(); window.scrollTo(0, 0); },
+  finEditType(d, el) {
+    const f = el.closest('form'); f.elements.type.value = d.v;
+    el.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el));
+    const list = d.v === 'inc' ? FIN_INC : FIN_EXP;
+    if (isIncCat(f.elements.cat.value) !== (d.v === 'inc')) f.elements.cat.value = list[0].id;
+    const box = f.querySelectorAll('.chips')[1];
+    box.innerHTML = list.map(c => `<button type="button" class="chip ${c.id === f.elements.cat.value ? 'on' : ''}" data-act="pick" data-name="cat" data-v="${c.id}">${c.e} ${c.n}</button>`).join('');
+    haptic.sel();
+  },
+  async finDel(d) {
+    if (!(await ask('Удалить операцию?'))) return;
+    closeSheet(); change(null, () => { S.fin = S.fin.filter(o => o.id !== d.id); });
+  },
   ascSheet(d) { haptic.sel(); ascSheet(d.id); },
   ascMark(d, el, ev) {
     const a = S.asc.find(x => x.id === d.id); if (!a || a.status === 'failed') return;
@@ -2329,6 +2680,31 @@ const F = {
     haptic.tap(); save(); render(); refreshSheets();
     const inp = document.querySelector('#goalBody [data-form="step"] [name=text]'); inp && inp.focus();
   },
+  fin(f) {
+    const line = f.elements.line.value.trim(); if (!line) return;
+    const ops = parseFin(line);
+    if (!ops.length) { haptic.err(); toast('🤔', 'Не нашёл сумму', 'Напиши, например: «кофе 250» или «зп 80к»'); return; }
+    change(null, () => { ops.forEach(o => S.fin.push({ id: uid(), ...o, ts: Date.now() })); });
+    haptic.ok();
+    toast(ops.length > 1 ? '🧾' : finCat(ops[0].cat).e, ops.length > 1 ? `Записано операций: ${ops.length}` : esc(ops[0].note),
+      ops.map(o => `${finCat(o.cat).e} ${o.type === 'inc' ? '+' : '−'}${money(o.amt)}`).join(' · ') + ' · нажми на запись, чтобы поправить');
+    const inp = document.getElementById('finInput'); if (inp) { inp.value = ''; inp.focus(); }
+  },
+  finEdit(f) {
+    const o = S.fin.find(x => x.id === f.dataset.id); if (!o) return;
+    const e = f.elements;
+    const cat = e.cat.value, note = e.note.value.trim() || finCat(cat).n;
+    // запоминаем: первое слово описания → выбранная категория
+    if (cat !== o.cat) { const key = note.toLowerCase().split(' ')[0]; if (key) S.finRules[key] = cat; }
+    closeSheet();
+    change(null, () => Object.assign(o, { note, cat, type: e.type.value === 'inc' ? 'inc' : 'exp', amt: Math.max(0, +e.amt.value || o.amt), d: e.d.value || o.d }));
+    haptic.ok();
+  },
+  finBudget(f) {
+    const id = f.dataset.id, v = Math.round(+f.elements.lim.value || 0);
+    if (v > 0) S.finBudgets[id] = v; else delete S.finBudgets[id];
+    save(); closeSheet(); render(); haptic.ok();
+  },
   asc(f) {
     const e = f.elements;
     const title = e.title.value.trim(); if (!title) return;
@@ -2388,6 +2764,13 @@ document.addEventListener('submit', e => {
   fn && fn(e.target);
 });
 document.addEventListener('input', e => {
+  if (e.target.id === 'finInput') {
+    const box = document.getElementById('finPreview'); if (!box) return;
+    const ops = e.target.value.trim() ? parseFin(e.target.value) : [];
+    box.innerHTML = ops.length ? ops.map(o => `<span class="fin-chip ${o.type}" style="--c:${finCat(o.cat).c}">${finCat(o.cat).e} ${esc(o.note)} <b>${o.type === 'inc' ? '+' : '−'}${money(o.amt)}</b>${o.d !== today() ? ` <i>${fmtDate(o.d).toLowerCase()}</i>` : ''}</span>`).join('')
+      : '<span class="meta">Пиши как в заметках — я сам разложу по категориям ✨</span>';
+    return;
+  }
   // ползунки колеса баланса: перерисовываем колесо на лету
   if (e.target.dataset.wheel) {
     const id = e.target.dataset.wheel, v = +e.target.value;
@@ -2466,6 +2849,30 @@ function seed() {
     { d: addDays(T, -35), s: { health: 5, career: 7, money: 4, love: 6, family: 7, growth: 5, fun: 4, soul: 5 } },
     { d: addDays(T, -6), s: { health: 7, career: 7, money: 5, love: 7, family: 8, growth: 6, fun: 5, soul: 6 } },
   ];
+  // финансы за ~2 месяца
+  const fop = (d, amt, type, cat, note) => S.fin.push({ id: uid(), d, amt: Math.round(amt), type, cat, note, ts: Date.now() });
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  for (let i = 62; i >= 0; i--) {
+    const d = addDays(T, -i), dn = +d.slice(8);
+    if (dn === 5) fop(d, 45000, 'inc', 'salary', 'Зарплата');
+    if (dn === 20) fop(d, 35000, 'inc', 'salary', 'Аванс');
+    if (dn === 1) fop(d, 32000, 'exp', 'home', 'Аренда квартиры');
+    if (dn === 10) { fop(d, 399, 'exp', 'bills', 'Яндекс Плюс'); fop(d, 650, 'exp', 'bills', 'Связь МТС'); fop(d, 299, 'exp', 'bills', 'Кинопоиск'); }
+    if (dn === 3) fop(d, 3500, 'exp', 'sport', 'Абонемент в зал');
+    if (dn === 15) fop(d, 4200, 'exp', 'home', 'Коммуналка');
+    if (rnd() < .45) fop(d, 700 + rnd() * 2300, 'exp', 'food', pick(['Пятёрочка', 'Перекрёсток', 'ВкусВилл', 'Продукты на неделю', 'Магнит']));
+    if (rnd() < .6) fop(d, 180 + rnd() * 170, 'exp', 'cafe', pick(['Кофе', 'Капучино', 'Раф с собой']));
+    if (rnd() < .3) fop(d, 300 + rnd() * 600, 'exp', 'transport', pick(['Такси', 'Яндекс Go', 'Каршеринг']));
+    if (rnd() < .12) fop(d, 900 + rnd() * 1800, 'exp', 'cafe', pick(['Доставка суши', 'Пицца', 'Ужин в кафе', 'Обед с коллегами']));
+    if (rnd() < .07) fop(d, 1200 + rnd() * 4000, 'exp', 'shopping', pick(['Wildberries', 'Озон', 'Кроссовки', 'Свитер']));
+    if (rnd() < .05) fop(d, 600 + rnd() * 900, 'exp', 'fun', pick(['Кино', 'Концерт', 'Боулинг']));
+    if (rnd() < .05) fop(d, 300 + rnd() * 1200, 'exp', 'health', pick(['Аптека', 'Витамины']));
+    if (rnd() < .06) fop(d, 700 + rnd() * 500, 'exp', 'pets', 'Корм для кота');
+    if (rnd() < .03) fop(d, 2500, 'exp', 'beauty', 'Маникюр');
+    if (rnd() < .03) fop(d, 8000 + rnd() * 12000, 'inc', 'side', 'Фриланс-заказ');
+    if (rnd() < .04) fop(d, 150 + rnd() * 600, 'inc', 'bonus', 'Кэшбэк');
+  }
+  S.finBudgets = { cafe: 6000, shopping: 8000 };
   // аскезы: две активные и одна завершённая
   const logRange = (start, n, skip = []) => { const l = {}; for (let i = 0; i < n; i++) if (!skip.includes(i)) l[addDays(start, i)] = 1; return l; };
   const sweetStart = addDays(T, -12);
