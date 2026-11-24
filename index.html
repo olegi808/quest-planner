@@ -403,6 +403,9 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .cal button.on{color:var(--ink)}
 .calnav b{font-family:var(--script);font-size:22px;font-weight:400}
 
+/* редактирование героя */
+.hn{flex-wrap:wrap}
+.hedit-btn{border:1px solid var(--line)!important;background:var(--paper2)!important;border-radius:14px;padding:4px 10px!important;font-family:'Nunito',sans-serif;font-size:12.5px!important;font-weight:700;color:var(--ink2)!important;line-height:1.2;min-height:30px}
 /* наклейки и лавка */
 .reset-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 4px 12px}
 .reset-row .chip{color:var(--danger);white-space:nowrap}
@@ -671,7 +674,7 @@ form.gtype-year .only-month{display:none}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-24.1';
+const APP_VERSION = '2026-11-24.2';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -1192,9 +1195,9 @@ function heroCard(g, opts = {}) {
   const curBest = Math.max(0, ...activeHabits().map(streak));
   return `<div class="card herocard">
     <div class="hrow">
-      <div class="avatar ${opts.big ? 'big' : ''}">${S.hero.avatar}<span class="lvl">${a.level}</span></div>
+      <div class="avatar tap ${opts.big ? 'big' : ''}" data-act="editHero" title="Изменить имя и аватар">${S.hero.avatar}<span class="lvl">${a.level}</span></div>
       <div class="grow">
-        <div class="hn">${esc(S.hero.name)}${opts.big ? '<button type="button" data-act="editHero" aria-label="Изменить">✏️</button>' : ''}</div>
+        <div class="hn"><span class="tap" data-act="editHero">${esc(S.hero.name)}</span>${opts.big ? '<button type="button" class="hedit-btn" data-act="editHero">✏️ Изменить</button>' : ''}</div>
         <div class="htitle">${a.title} · ур. ${a.level}</div>
         <div class="xpbar"><i style="width:${(a.cur / a.need * 100).toFixed(1)}%"></i></div>
         <div class="xpt"><span>${a.cur} / ${a.need} XP</span><span>до ур. ${a.level + 1}: ${a.need - a.cur}</span></div>
@@ -2390,9 +2393,11 @@ function rewardSheet(id) {
 }
 
 function heroSheet() {
-  openSheet('Герой', `<form data-form="heroEdit">
+  openSheet('Мой герой', `<form data-form="heroEdit">
     <input type="hidden" name="avatar" value="${S.hero.avatar}">
+    <div class="lbl">Имя</div>
     <div class="field"><input name="name" value="${esc(S.hero.name)}" maxlength="24" required autocomplete="off"></div>
+    <div class="lbl">Аватар</div>
     <div class="avatars">${AVATARS.map(a => `<button type="button" class="${a === S.hero.avatar ? 'on' : ''}" data-act="pick" data-name="avatar" data-v="${a}">${a}</button>`).join('')}</div>
     <button class="btn">Сохранить</button>
   </form>`);
