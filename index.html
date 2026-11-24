@@ -493,6 +493,29 @@ body{background-image:linear-gradient(rgba(190,150,155,.13) 1px,transparent 1px)
 .sel{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;font-size:15px;-webkit-appearance:none;appearance:none}
 form.gtype-year .only-month{display:none}
 /* колесо баланса в стиле конспекта */
+/* аскезы: карточка-стикер с трекером дней */
+.asc{border-left:6px solid #d98a95;padding:12px 14px}
+.asc-top{display:flex;align-items:center;gap:12px}
+.asc-emo{width:44px;height:44px;border-radius:50%;background:var(--pink2);display:flex;align-items:center;justify-content:center;font-size:23px;flex:none}
+.asc-emo.sm{width:36px;height:36px;font-size:19px}
+.asc-title{font-weight:700;font-size:16px}
+.asc-pc{font-family:var(--hand);font-size:24px;font-weight:700;color:var(--rose)}
+.asc-why{font-family:var(--hand);font-size:19px;color:var(--ink2);margin:8px 2px 0;line-height:1.2}
+.asc-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin-top:12px}
+.asc-grid button{aspect-ratio:1;border:1px solid var(--line);border-radius:50%;background:var(--paper);font-family:var(--hand);font-size:13px;font-weight:700;color:var(--ink2);padding:0;line-height:1}
+.asc-grid.small button{font-size:0}
+.asc-grid button.on{background:#e6a5ae;border-color:#e6a5ae;color:#fff}
+.asc-grid button.miss{border:1.5px solid color-mix(in srgb,var(--danger) 60%,transparent);color:var(--danger)}
+.asc-grid button.today{border:2px solid var(--rose);color:var(--ink)}
+.asc-grid button:disabled{opacity:.5;cursor:default}
+.asc-miss{font-size:12.5px;color:var(--danger);margin-top:8px}
+.asc-actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+.asc-btn{margin:0;flex:1;font-size:20px;padding:8px 12px}
+.asc-btn.done{background:#e9eee3;color:var(--ink)}
+.asc-fail{flex:none;color:var(--danger)}
+.asc-intro{background:var(--pink2)!important}
+.numin{width:76px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
+.pill .nm small{font-size:11.5px}
 .wheelcard{position:relative;overflow:visible;padding:18px 8px 14px;margin-top:18px;transform:rotate(-.4deg)}
 .wheelcard::before{content:"";position:absolute;top:-11px;left:50%;width:110px;height:22px;transform:translateX(-50%) rotate(2deg);background:rgba(232,217,199,.9);
   clip-path:polygon(0 0,100% 6%,97% 50%,100% 100%,0 94%,3% 50%)}
@@ -597,6 +620,9 @@ const AREAS = [
 ];
 const areaOf = id => AREAS.find(a => a.id === id) || AREAS[5];
 const GOAL_REWARD = { year: { xp: 100, gold: 50 }, month: { xp: 40, gold: 20 } };
+// Аскезы: каждый удержанный день +4 XP, завершение — 3 XP и 1 золото за каждый день срока
+const ASC_EMOJIS = ['🚫','🍬','📵','🍷','🚬','☕','🍔','🛌','🧘','💧','📖','🏃','❄️','🙊','💸','🌅'];
+const ascReward = a => ({ xp: a.days * 3, gold: a.days });
 const DEFAULT_REWARDS =[['☕', 'Кофе с десертом', 30], ['🎬', 'Серия любимого сериала', 40], ['🎮', 'Час игр без чувства вины', 60], ['😴', 'Поспать подольше', 80], ['🍕', 'Заказать пиццу', 150], ['🛍️', 'Купить себе что-то приятное', 400]];
 
 const BOSSES = [
@@ -660,10 +686,12 @@ const ACH = [
   { id: 'goal1', i: '🏹', n: 'В яблочко', d: 'Достигни первой цели', g: 40, ok: s => s.goalsDone >= 1 },
   { id: 'goal5', i: '🗻', n: 'Покоритель вершин', d: 'Достигни 5 целей', g: 120, ok: s => s.goalsDone >= 5 },
   { id: 'wheel1', i: '🎡', n: 'Взгляд на себя', d: 'Заполни колесо баланса', g: 15, ok: s => s.wheels >= 1 },
+  { id: 'asc1', i: '⛰️', n: 'Сила воли', d: 'Заверши первую аскезу', g: 40, ok: s => s.ascDone >= 1 },
+  { id: 'asc3', i: '🛡️', n: 'Железный характер', d: 'Заверши 3 аскезы', g: 100, ok: s => s.ascDone >= 3 },
 ];
 
 /* ================= state & storage ================= */
-const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false, goals: [], weekFocus: {}, wheel: [] });
+const blank = () => ({ v: 2, updated: 0, tasks: [], habits: [], hero: null, bank: { xp: 0, gold: 0, tasks: 0, checks: 0, days: {} }, quests: {}, claims: {}, bosses: {}, ach: {}, rewards: [], purchases: [], tipSeen: false, goals: [], weekFocus: {}, wheel: [], asc: [] });
 let S = blank();
 const ui = { tab: 'camp', taskFilter: 'today', statRange: 7, home: null, taskMode: 'cal', calDay: null };
 const fmtTime = s => s ? s.replace(/^0(\d)/, '$1') : '';
@@ -862,9 +890,15 @@ function computeAll() {
   }
   // колесо баланса: +20 XP за оценку, не чаще раза в неделю
   xp += new Set(S.wheel.map(w => weekStart(w.d))).size * 20;
+  // аскезы
+  let ascDone = 0;
+  for (const a of S.asc) {
+    for (const d of Object.keys(a.log)) { xp += 4; gold += 1; add(d, 4); }
+    if (a.status === 'done') { const r = ascReward(a); xp += r.xp; gold += r.gold; ascDone++; if (a.doneAt) add(a.doneAt, r.xp); }
+  }
   const spent = S.purchases.reduce((a, p) => a + p.cost, 0);
   gold -= spent;
-  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, goalsDone, wheels: S.wheel.length, ...levelInfo(xp) };
+  return { xp, gold, tasksDone, checks, best, dayXp, quests: claims.length, bosses, purchases: S.purchases.length, goalsDone, wheels: S.wheel.length, ascDone, ...levelInfo(xp) };
 }
 function bossState(all) {
   const T = today(), wk = weekStart(T);
@@ -1138,6 +1172,8 @@ function viewCamp(g) {
   ${questList(qs)}
   ${c.hT.length ? `<div class="sec"><span class="tape">Привычки на сегодня</span> <span class="r">${c.hDone}/${c.hT.length}</span></div>
   <div class="pills">${c.hT.map(h => `<button type="button" class="pill ${isDone(h, T) ? 'on' : ''}" style="--c:${h.color}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}"><span class="em">${h.emoji}</span><span class="nm">${esc(h.name)}</span><span class="px">+${nextBonus(h)}</span></button>`).join('')}</div>` : ''}
+  ${ascActive().filter(a => a.start <= T).length ? `<div class="sec"><span class="tape">Аскезы</span> <span class="r">${ascActive().filter(a => a.log[T]).length}/${ascActive().filter(a => a.start <= T).length} сегодня</span></div>
+  <div class="pills">${ascActive().filter(a => a.start <= T).map(a => `<button type="button" class="pill ${a.log[T] ? 'on' : ''}" style="--c:#d98a95" data-act="ascMark" data-id="${a.id}" data-day="${T}"><span class="em">${a.emoji}</span><span class="nm">${esc(a.title)}<br><small class="meta">день ${Math.min(ascDayNo(a), a.days)} из ${a.days}</small></span></button>`).join('')}</div>` : ''}
   <div class="sec"><span class="tape">Задачи на сегодня</span></div>
   <div class="list">
     ${undone.map(taskRow).join('')}
@@ -1346,8 +1382,9 @@ function goalCard(g) {
   </div>`;
 }
 function viewGoals() {
-  const modes = `<div class="seg">${[['goals', '🎯 Цели'], ['wheel', '🎡 Колесо баланса']].map(([k, l]) => `<button type="button" class="${(ui.goalMode || 'goals') === k ? 'on' : ''}" data-act="goalMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const modes = `<div class="seg">${[['goals', '🎯 Цели'], ['asc', '🔥 Аскезы'], ['wheel', '🎡 Колесо']].map(([k, l]) => `<button type="button" class="${(ui.goalMode || 'goals') === k ? 'on' : ''}" data-act="goalMode" data-v="${k}">${l}</button>`).join('')}</div>`;
   if (ui.goalMode === 'wheel') return modes + viewWheel();
+  if (ui.goalMode === 'asc') return modes + viewAsc();
   const T = today(), y = curYear(), m = curMonth();
   const yG = S.goals.filter(g => g.type === 'year' && g.period === y);
   const mG = S.goals.filter(g => g.type === 'month' && g.period === m);
@@ -1435,6 +1472,74 @@ function goalEditSheet(id, type, area) {
     ${g ? `<button type="button" class="btn ghost" data-act="delGoal" data-id="${g.id}">Удалить цель</button>` : ''}
   </form>`);
   if (!g) focusLater('[name=title]');
+}
+
+/* ---------- аскезы ---------- */
+const ascDays = a => Object.keys(a.log).filter(d => d >= a.start).length;           // удержано дней
+const ascDayNo = a => Math.max(0, Math.round((parse(today()) - parse(a.start)) / 864e5) + 1); // какой сегодня день
+const ascActive = () => S.asc.filter(a => a.status === 'active');
+function ascCard(a) {
+  const T = today(), held = ascDays(a), dayNo = Math.min(ascDayNo(a), a.days);
+  const started = a.start <= T;
+  const missed = []; // прошедшие дни без отметки
+  let cells = '';
+  for (let i = 0; i < a.days; i++) {
+    const s = addDays(a.start, i);
+    const cls = a.log[s] ? 'on' : s < T ? 'miss' : s === T ? 'today' : '';
+    if (cls === 'miss') missed.push(s);
+    cells += `<button type="button" class="${cls}" ${s <= T ? `data-act="ascMark" data-id="${a.id}" data-day="${s}"` : 'disabled'} title="${fmtDate(s)}">${i + 1}</button>`;
+  }
+  const todayDone = !!a.log[T];
+  return `<div class="card asc">
+    <div class="asc-top tap" data-act="ascSheet" data-id="${a.id}">
+      <div class="asc-emo">${a.emoji}</div>
+      <div class="grow"><b class="asc-title">${esc(a.title)}</b>
+        <div class="meta">${started ? `День ${dayNo} из ${a.days} · удержано ${held}` : `Старт ${fmtDate(a.start).toLowerCase()}`}${a.attempt > 1 ? ` · попытка ${a.attempt}` : ''}</div></div>
+      <span class="asc-pc">${Math.round(held / a.days * 100)}%</span>
+    </div>
+    ${a.why ? `<div class="asc-why">«${esc(a.why)}»</div>` : ''}
+    <div class="asc-grid ${a.days > 40 ? 'small' : ''}">${cells}</div>
+    ${missed.length ? `<div class="asc-miss">Не отмечено: ${missed.length} ${plural(missed.length, 'день', 'дня', 'дней')}. Держался(ась)? Нажми на день в сетке — или честно отметь срыв.</div>` : ''}
+    <div class="asc-actions">
+      ${started ? `<button type="button" class="btn asc-btn ${todayDone ? 'done' : ''}" data-act="ascMark" data-id="${a.id}" data-day="${T}">${todayDone ? '✨ Сегодня засчитано' : '✓ Держусь сегодня'}</button>` : ''}
+      <button type="button" class="chip asc-fail" data-act="ascFail" data-id="${a.id}">💔 Сорвался</button>
+    </div>
+  </div>`;
+}
+function viewAsc() {
+  const act = ascActive(), arch = S.asc.filter(a => a.status !== 'active').sort((x, y) => (y.doneAt || y.failedAt || '').localeCompare(x.doneAt || x.failedAt || ''));
+  return `<div class="card tip asc-intro"><b>Аскеза — обещание себе</b>
+      <div class="meta" style="margin-top:4px">Отказ от чего-то или новое правило на 7–90 дней. Отмечай каждый день, который продержался. Сорвался — не страшно: начни заново, попытки сохраняются.</div></div>
+    <div class="sec"><span class="tape">Мои аскезы · ${act.length}</span><button type="button" data-act="newAsc">+ аскеза</button></div>
+    ${act.map(ascCard).join('') || `<div class="card empty"><div class="big">🔥</div><b>Пока нет аскез</b><p class="meta">Например: 21 день без сахара, 30 дней без соцсетей до обеда, 40 дней холодного душа</p><button class="btn" data-act="newAsc">Взять аскезу</button></div>`}
+    ${arch.length ? `<div class="sec"><span class="tape">Архив</span></div><div class="list">${arch.map(a => `<div class="row">
+      <div class="asc-emo sm">${a.emoji}</div>
+      <div class="grow"><div class="ttl">${esc(a.title)}</div><div class="meta">${a.status === 'done' ? `✅ Завершена ${fmtDate(a.doneAt).toLowerCase()} · ${a.days} дн.` : `💔 Сорвалась на ${ascDays(a)}-м дне из ${a.days}`}</div></div>
+      ${a.status === 'failed' ? `<button type="button" class="chip" data-act="ascRestart" data-id="${a.id}">Заново</button>` : '<span style="font-size:20px">🏅</span>'}
+    </div>`).join('')}</div>` : ''}`;
+}
+function ascSheet(id) {
+  const a = id ? S.asc.find(x => x.id === id) : null;
+  const T = today(), emoji = a ? a.emoji : ASC_EMOJIS[1], days = a ? a.days : 21;
+  const preset = [7, 14, 21, 30, 40, 90];
+  openSheet(a ? 'Аскеза' : 'Новая аскеза', `<form data-form="asc">
+    <input type="hidden" name="id" value="${a ? a.id : ''}">
+    <input type="hidden" name="emoji" value="${emoji}">
+    <input type="hidden" name="start" value="${a ? a.start : T}">
+    <div class="field"><input name="title" placeholder="Например: без сладкого" value="${a ? esc(a.title) : ''}" required maxlength="80" autocomplete="off">
+      <textarea name="why" placeholder="Зачем мне это? (будет напоминанием)" rows="2" maxlength="200">${a ? esc(a.why || '') : ''}</textarea></div>
+    <div class="lbl">Срок</div>
+    <div class="chips">${preset.map(n => `<button type="button" class="chip ${n === days ? 'on' : ''}" data-act="pick" data-name="days" data-v="${n}">${n} ${plural(n, 'день', 'дня', 'дней')}</button>`).join('')}
+      <input type="number" name="days" min="3" max="365" value="${days}" class="numin" aria-label="Своё число дней"></div>
+    ${a ? '' : `<div class="lbl">Начать</div>
+    <div class="chips"><button type="button" class="chip on" data-act="pick" data-name="start" data-v="${T}">Сегодня</button><button type="button" class="chip" data-act="pick" data-name="start" data-v="${addDays(T, 1)}">Завтра</button><button type="button" class="chip" data-act="pick" data-name="start" data-v="${addDays(T, 7 - wd(T))}">С понедельника</button></div>`}
+    <div class="lbl">Иконка</div>
+    <div class="emojis">${ASC_EMOJIS.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-act="pick" data-name="emoji" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="meta" style="margin:12px 4px 0">Награда: +4 XP за каждый день и +${days * 3} XP за завершение</div>
+    <button class="btn">${a ? 'Сохранить' : 'Взять аскезу'}</button>
+    ${a ? `<button type="button" class="btn ghost" data-act="delAsc" data-id="${a.id}">Удалить аскезу</button>` : ''}
+  </form>`);
+  if (!a) focusLater('[name=title]');
 }
 
 /* ---------- колесо баланса ---------- */
@@ -1854,6 +1959,41 @@ const A = {
     const wk = weekStart(today());
     S.weekFocus[wk] = (S.weekFocus[wk] || []).filter(x => x.id !== d.id); save(); render();
   },
+  newAsc() { ascSheet(null); },
+  ascSheet(d) { haptic.sel(); ascSheet(d.id); },
+  ascMark(d, el, ev) {
+    const a = S.asc.find(x => x.id === d.id); if (!a || a.status === 'failed') return;
+    let finished = false;
+    change(ev, () => {
+      if (a.log[d.day]) delete a.log[d.day]; else a.log[d.day] = 1;
+      if (a.status === 'active' && ascDays(a) >= a.days) { a.status = 'done'; a.doneAt = today(); finished = true; }
+      else if (a.status === 'done' && ascDays(a) < a.days) { a.status = 'active'; a.doneAt = null; }
+    });
+    a.log[d.day] ? haptic.ok() : haptic.tap();
+    if (finished) {
+      const r = ascReward(a);
+      haptic.heavy(); confetti(140);
+      modal(`<div class="big">${a.emoji}</div><div class="kick">АСКЕЗА ВЫПОЛНЕНА</div><h2>${esc(a.title)}</h2>
+        <div class="meta">${a.days} ${plural(a.days, 'день', 'дня', 'дней')} силы воли. Ты держишь слово, данное себе 🤍</div>
+        <div class="rewards"><span style="color:var(--xp)">+${r.xp} XP</span><span style="color:var(--gold)">+${r.gold} 💰</span></div>`);
+    }
+  },
+  async ascFail(d) {
+    const a = S.asc.find(x => x.id === d.id); if (!a) return;
+    if (!(await ask(`Сорвался в аскезе «${a.title}»? Удержанные дни останутся в опыте, а аскезу можно начать заново.`))) return;
+    a.status = 'failed'; a.failedAt = today(); save(); render(); haptic.err();
+    toast('🌱', 'Это не конец', 'Срыв — часть пути. Нажми «Заново» в архиве, когда будешь готов(а)');
+  },
+  ascRestart(d) {
+    const a = S.asc.find(x => x.id === d.id); if (!a) return;
+    S.asc.push({ id: uid(), title: a.title, emoji: a.emoji, why: a.why, days: a.days, start: today(), log: {}, status: 'active', attempt: (a.attempt || 1) + 1, created: Date.now() });
+    save(); render(); haptic.ok(); window.scrollTo(0, 0);
+    toast('🔥', 'Новая попытка', `«${esc(a.title)}» — день 1. Ты справишься`);
+  },
+  async delAsc(d) {
+    if (!(await ask('Удалить аскезу? Опыт за удержанные дни пропадёт.'))) return;
+    S.asc = S.asc.filter(a => a.id !== d.id); save(); closeSheet(); render();
+  },
   saveWheel(d, el, ev) {
     const draft = { ...ui.wheelDraft };
     change(ev, () => {
@@ -2006,6 +2146,18 @@ const F = {
     haptic.tap(); save(); render(); refreshSheets();
     const inp = document.querySelector('#goalBody [data-form="step"] [name=text]'); inp && inp.focus();
   },
+  asc(f) {
+    const e = f.elements;
+    const title = e.title.value.trim(); if (!title) return;
+    const days = Math.min(365, Math.max(3, Math.round(+e.days.value || 21)));
+    const data = { title, why: e.why.value.trim(), emoji: e.emoji.value, days };
+    if (e.id.value) {
+      const a = S.asc.find(x => x.id === e.id.value); Object.assign(a, data);
+      if (a.status === 'active' && ascDays(a) >= a.days) { a.status = 'done'; a.doneAt = today(); }
+    } else S.asc.push({ id: uid(), ...data, start: e.start.value || today(), log: {}, status: 'active', attempt: 1, created: Date.now() });
+    ui.tab = 'goals'; ui.goalMode = 'asc';
+    haptic.ok(); save(); closeSheet(); render();
+  },
   focus(f) {
     const text = f.elements.text.value.trim(); if (!text) return;
     const wk = weekStart(today());
@@ -2128,6 +2280,14 @@ function seed() {
   S.wheel = [
     { d: addDays(T, -35), s: { health: 5, career: 7, money: 4, love: 6, family: 7, growth: 5, fun: 4, soul: 5 } },
     { d: addDays(T, -6), s: { health: 7, career: 7, money: 5, love: 7, family: 8, growth: 6, fun: 5, soul: 6 } },
+  ];
+  // аскезы: две активные и одна завершённая
+  const logRange = (start, n, skip = []) => { const l = {}; for (let i = 0; i < n; i++) if (!skip.includes(i)) l[addDays(start, i)] = 1; return l; };
+  const sweetStart = addDays(T, -12);
+  S.asc = [
+    { id: uid(), title: 'Без сладкого', emoji: '🍬', why: 'Хочу больше энергии и чистую кожу', days: 40, start: sweetStart, log: logRange(sweetStart, 12, [11]), status: 'active', attempt: 2, created: Date.now() },
+    { id: uid(), title: 'Без соцсетей до 12:00', emoji: '📵', why: 'Утро — для себя, а не для ленты', days: 21, start: addDays(T, -5), log: logRange(addDays(T, -5), 5), status: 'active', attempt: 1, created: Date.now() },
+    { id: uid(), title: 'Холодный душ', emoji: '❄️', why: '', days: 14, start: addDays(T, -40), log: logRange(addDays(T, -40), 14), status: 'done', doneAt: addDays(T, -27), attempt: 1, created: Date.now() },
   ];
   // пара пройденных квестов и покупка
   for (let i = 1; i <= 12; i++) S.claims[addDays(T, -i) + ':tasks3'] = { xp: 30, gold: 12, d: addDays(T, -i) };
