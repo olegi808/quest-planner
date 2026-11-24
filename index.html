@@ -669,6 +669,59 @@ form.gtype-year .only-month{display:none}
 .tab{font-size:14px}
 .tab svg{width:21px;height:21px}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
+
+/* ============ Тёмная тема «ночной блокнот» ============ */
+html[data-theme=dark]{
+  --paper:#1d191b;--paper2:#282225;--ink:#f0e6e8;--ink2:#a6979b;
+  --pink:#6b4650;--pink2:#3a2a2f;--rose:#e3a0ac;--beige:#4a3f37;--sage:#6f8467;--mauve:#8a6f94;
+  --accent-text:#2a1f22;--danger:#f08c97;--ok:#8fb582;--xp:#c3a2cf;--gold:#e0b26c;--hp:#e58f9a;
+  --sep:rgba(255,235,240,.12);--soft:rgba(227,160,172,.18);--field:rgba(255,235,240,.07);
+  --line:rgba(255,235,240,.09);--shadow:0 1px 0 rgba(0,0,0,.2),0 8px 18px -10px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+html[data-theme=dark] body{background-image:linear-gradient(rgba(255,235,240,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,235,240,.045) 1px,transparent 1px)}
+html[data-theme=dark] .sheet{background-image:linear-gradient(rgba(255,235,240,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,235,240,.045) 1px,transparent 1px)}
+html[data-theme=dark] .backdrop{background:rgba(0,0,0,.55)}
+html[data-theme=dark] .tabbar{background:rgba(29,25,27,.95);border-top-color:rgba(255,235,240,.14)}
+html[data-theme=dark] .sec:nth-of-type(3n+2) .tape{background:#4d4239}
+html[data-theme=dark] .sec:nth-of-type(3n) .tape{background:#4a3c52}
+html[data-theme=dark] .sec.over .tape{background:#6e3a42}
+html[data-theme=dark] .herocard::before{background:rgba(160,104,116,.75)}
+html[data-theme=dark] .wheelcard::before{background:rgba(110,94,80,.85)}
+html[data-theme=dark] .boss{background:#352d27}
+html[data-theme=dark] .tip.home{background:#2f2a25!important}
+html[data-theme=dark] .note-soft,html[data-theme=dark] .principles,html[data-theme=dark] .demo-note{background:#262c24!important}
+html[data-theme=dark] .toast{background:var(--paper2);border-color:var(--pink)}
+html[data-theme=dark] .field:focus-within,html[data-theme=dark] .quick:focus-within{background:var(--paper2)}
+html[data-theme=dark] .fin-in-row input:focus,html[data-theme=dark] .numin:focus,html[data-theme=dark] .sel:focus,html[data-theme=dark] .timechips input:focus,html[data-theme=dark] .chips input[type=date]:focus{background:var(--paper2)}
+html[data-theme=dark] .xpb{background:#3b2f40}
+html[data-theme=dark] .xpb.p1{color:#e0b26c;background:#3d3326}
+html[data-theme=dark] .xpb.p2{background:#43262c}
+html[data-theme=dark] .pyr-step.p1,html[data-theme=dark] .pyr-step.p4{background:#2e3729}
+html[data-theme=dark] .pyr-step.p3{background:#3c3227}
+html[data-theme=dark] .howto .scale span{background:rgba(255,235,240,.06)}
+html[data-theme=dark] .fin-sum b.inc,html[data-theme=dark] .inc,html[data-theme=dark] .fin-amt.inc,html[data-theme=dark] .fin-chip.inc b{color:#9cc48e}
+html[data-theme=dark] .kpi em.up{color:#9cc48e}
+html[data-theme=dark] .l0{background:#2b2427!important}html[data-theme=dark] .l1{background:#4a3138!important}html[data-theme=dark] .l2{background:#6b3f4a!important}
+html[data-theme=dark] .l3{background:#94566399!important;background:#93535f!important}html[data-theme=dark] .l4{background:#c36f7f!important}
+html[data-theme=dark] .wsec-bg{opacity:.16;stroke:var(--paper2)}
+html[data-theme=dark] .wsec,html[data-theme=dark] .wdot{stroke:var(--paper2)}
+html[data-theme=dark] .wring{stroke:#43323a}
+html[data-theme=dark] .wgrid{stroke:rgba(255,235,240,.07)}
+html[data-theme=dark] .wcenter{stroke:var(--paper2)}
+html[data-theme=dark] .trophy:not(.locked) .ti{box-shadow:0 0 0 3px #e9dfe1,0 3px 8px rgba(0,0,0,.5)}
+html[data-theme=dark] .float{text-shadow:0 1px 0 #000,0 0 8px #000}
+html[data-theme=dark] .claim{color:#3b2600}
+html[data-theme=dark] .asc-grid button.on{background:#c97c8a;border-color:#c97c8a}
+html[data-theme=dark] .day.on i,html[data-theme=dark] .cal button.on{color:#2a1f22}
+html[data-theme=dark] .hcheck.on{color:#2a1f22}
+html[data-theme=dark] .chart .avgline{opacity:.5}
+html[data-theme=dark] .fin-input,html[data-theme=dark] .tip{background:var(--pink2)!important}
+html[data-theme=dark] .asc{border-left-color:#c97c8a}
+/* переключатель темы */
+.theme-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 4px 12px}
+.theme-row .seg{margin:0;flex:1;max-width:260px}
+.theme-row .seg button{font-size:16px;padding:4px 2px}
 </style>
 </head>
 <body>
@@ -681,7 +734,7 @@ form.gtype-year .only-month{display:none}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-24.4';
+const APP_VERSION = '2026-11-24.5';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -1473,6 +1526,7 @@ function viewProfile(g) {
   const slain = Object.entries(S.bosses).filter(([, b]) => b.claimed).sort(([x], [y]) => x.localeCompare(y));
   const got = Object.keys(S.ach).length;
   return `${heroCard(g, { big: true })}
+  <div class="theme-row"><span class="meta">Тема</span><div class="seg">${[['light', '☀️ Светлая'], ['dark', '🌙 Тёмная'], ['auto', '📱 Авто']].map(([k, l]) => `<button type="button" class="${(S.theme || 'auto') === k ? 'on' : ''}" data-act="setTheme" data-v="${k}">${l}</button>`).join('')}</div></div>
   <div class="reset-row"><span class="meta">Хочешь начать заново?</span><button type="button" class="chip" data-act="resetAll">🧹 Очистить всё</button></div>
   <div class="kpis">
     <div class="kpi"><b>${a.xp}</b><span>опыта всего</span></div>
@@ -1515,11 +1569,12 @@ const looksLikeDemo = () => {
 };
 // Сброс всего прогресса: остаются только имя и аватар героя
 function resetAll() {
-  const hero = S.hero;
+  const hero = S.hero, theme = S.theme;
   S = blank();
   S.hero = { ...hero, since: today() };
   S.rewards = DEFAULT_REWARDS.map(([emoji, title, cost]) => ({ id: uid(), emoji, title, cost }));
   S.demoChecked = true;
+  S.theme = theme;
   Object.assign(ui, { tab: 'camp', calDay: null, calView: null, finMonth: null, statSel: null, statOff: 0, wheelDraft: null });
 }
 
@@ -2497,6 +2552,7 @@ const A = {
     t.done ? haptic.ok() : haptic.tap();
     refreshSheets();
   },
+  setTheme(d) { S.theme = d.v; applyTheme(); save(); render(); haptic.sel(); },
   heroMode(d) { ui.heroMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
   goalMode(d) { ui.goalMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
   wheelHint(d) { ui.wheelHint = ui.wheelHint === d.v ? null : d.v; haptic.sel(); render(); },
@@ -2870,13 +2926,24 @@ document.addEventListener('input', e => {
 });
 
 /* ================= boot ================= */
+// Тема: «как в Telegram» по умолчанию, либо принудительно светлая/тёмная
+function applyTheme() {
+  const mode = S.theme || 'auto';
+  let dark = mode === 'dark';
+  if (mode === 'auto') dark = inTG ? tg.colorScheme === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  const bg = dark ? '#1d191b' : '#f8f2ec', bar = dark ? '#1d191b' : '#fffaf6';
+  if (ver('6.1')) safe(() => { tg.setHeaderColor(bg); tg.setBackgroundColor(bg); });
+  if (ver('7.10')) safe(() => tg.setBottomBarColor(bar));
+}
+safe(() => matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!inTG) applyTheme(); }));
 async function boot() {
   if (tg) {
     safe(() => tg.ready());
     safe(() => tg.expand());
-    if (ver('6.1')) safe(() => { tg.setHeaderColor('#f8f2ec'); tg.setBackgroundColor('#f8f2ec'); });
+    applyTheme();
+    safe(() => tg.onEvent('themeChanged', applyTheme));
     if (ver('7.7')) safe(() => tg.disableVerticalSwipes());
-    if (ver('7.10')) safe(() => tg.setBottomBarColor('#fffaf6'));
     if (ver('8.0')) safe(() => {
       tg.onEvent('homeScreenAdded', () => {
         ui.home = 'added'; render(); haptic.ok(); confetti(50);
@@ -2887,6 +2954,7 @@ async function boot() {
   }
   checkUpdate();
   await load();
+  applyTheme();
   if (S.hero) {
     settleOldBosses();
     const got = checkAch();
