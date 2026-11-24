@@ -594,6 +594,23 @@ form.gtype-year .only-month{display:none}
 .dsum-v{flex:1;display:flex;gap:10px;font-size:13px;font-weight:700;flex-wrap:wrap}
 .dsum .chip{flex:none;padding:3px 10px;font-size:13px}
 .insight{font-size:13px;color:var(--ink2);margin-top:10px;text-align:center}
+/* инструкция к колесу баланса */
+.howto{padding:14px 16px}
+.howto summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.howto summary::-webkit-details-marker{display:none}
+.howto summary b{font-family:var(--hand);font-size:23px}
+.howto-arr{font-size:13px;color:var(--ink2);transition:transform .2s}
+.howto[open] .howto-arr{transform:rotate(180deg)}
+.howto ol{margin:10px 0 0;padding-left:20px;font-size:13.5px;line-height:1.45}
+.howto li{margin:5px 0}
+.howto li b{font-weight:700}
+.howto .scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:12px}
+.howto .scale span{background:rgba(255,250,246,.75);border-radius:10px;padding:5px 2px;text-align:center;font-size:10.5px;color:var(--ink2);line-height:1.2}
+.howto .scale b{display:block;font-family:var(--hand);font-size:17px;color:var(--ink)}
+.wq{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--field);font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:var(--ink2);margin-left:5px;flex:none}
+.whint{grid-column:1/-1;background:color-mix(in srgb,var(--c) 16%,var(--paper2));border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.4;margin-top:-2px}
+.whint-s{margin-top:5px;font-family:var(--hand);font-size:17px;color:var(--ink2)}
+.whint-s b{font-size:18px}
 .timechips input[type=time]{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px}
 </style>
 </head>
@@ -1657,6 +1674,18 @@ function ascSheet(id) {
 
 /* ---------- колесо баланса ---------- */
 // Колесо в стиле конспекта: сектора — полоски васи-ленты, сетка карандашом, подписи от руки по дуге
+// Вопросы-подсказки к каждой сфере и словесная шкала
+const WHEEL_Q = {
+  health: 'Как я себя чувствую? Сон, энергия, питание, движение, нет ли того, что давно беспокоит.',
+  career: 'Нравится ли мне то, чем я занимаюсь? Есть ли рост, смысл и признание?',
+  money: 'Хватает ли денег на жизнь и на мечты? Есть ли подушка и порядок в финансах?',
+  love: 'Чувствую ли я близость, тепло и поддержку в паре? Или мне спокойно и хорошо одному(ой)?',
+  family: 'Есть ли рядом люди, с которыми хорошо? Хватает ли общения с родными и друзьями?',
+  growth: 'Учусь ли я новому? Читаю, развиваюсь, чувствую, что расту?',
+  fun: 'Есть ли в жизни отдых, хобби, радость и новые впечатления — без чувства вины?',
+  soul: 'Спокойно ли мне внутри? Есть ли время на себя, ощущение смысла и гармонии?',
+};
+const scoreWord = v => v <= 2 ? 'очень плохо' : v <= 4 ? 'плохо' : v <= 6 ? 'терпимо' : v <= 8 ? 'хорошо' : 'отлично';
 const WHEEL_SHORT = { health: 'Здоровье', career: 'Работа', money: 'Финансы', love: 'Отношения', family: 'Близкие', growth: 'Развитие', fun: 'Отдых', soul: 'Душа' };
 function wheelSvg(scores, prev) {
   const C = 160, R = 104, n = AREAS.length, step = 360 / n, gap = 1.6;
@@ -1706,10 +1735,24 @@ function viewWheel() {
       <div class="meta" style="text-align:center">${last ? `Последняя оценка: ${fmtDate(last.d).toLowerCase()} · средний балл ${wheelAvg(last.s).toFixed(1)}${delta !== null ? ` (${delta >= 0 ? '+' : ''}${delta.toFixed(1)})` : ''}` : 'Оцени каждую сферу жизни от 1 до 10 — честно, без идеала'}</div>
       ${last ? '<div class="legend" style="justify-content:center;margin-top:6px"><span><i style="border:1.4px solid rgba(201,133,145,.7)"></i> прошлая оценка</span></div>' : ''}
     </div>
+    <details class="card tip howto" ${S.wheel.length ? '' : 'open'}>
+      <summary><b>Как оценивать сферы</b><span class="howto-arr">▾</span></summary>
+      <ol>
+        <li><b>Как есть сейчас</b>, а не как хотелось бы — по ощущениям за последний месяц.</li>
+        <li><b>Не сравнивай с другими.</b> Только со своим представлением о хорошей жизни: 10 — «лучше и не надо».</li>
+        <li><b>Первая цифра — самая честная.</b> Не думай долго: на всё колесо хватит пары минут.</li>
+        <li><b>Не знаешь, что ставить?</b> Нажми на название сферы — появится вопрос-подсказка.</li>
+        <li><b>Смотри на самые низкие сферы.</b> Маленький шаг там даёт больше всего — поставь на них цель месяца.</li>
+        <li><b>Пересматривай раз в месяц</b> и сравнивай с прошлой оценкой (розовая линия на колесе).</li>
+      </ol>
+      <div class="scale">${[[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]].map(([x, y]) => `<span><b>${x}–${y}</b>${scoreWord(x)}</span>`).join('')}</div>
+    </details>
     <div class="card wsliders"><div class="wheel-sub">Оцени каждую сферу от 1 до 10</div>${AREAS.map(a => `<div class="wrow" style="--c:${a.c}">
-      <span class="wname"><span class="wemo-s">${a.e}</span>${a.n}</span>
+      <span class="wname tap" data-act="wheelHint" data-v="${a.id}"><span class="wemo-s">${a.e}</span>${a.n}<span class="wq">?</span></span>
       <input type="range" min="1" max="10" step="1" value="${d[a.id] || 5}" data-wheel="${a.id}" style="--p:${((d[a.id] || 5) - 1) / 9 * 100}%" aria-label="${a.n}">
-      <b id="wv-${a.id}">${d[a.id] || 5}</b></div>`).join('')}
+      <b id="wv-${a.id}">${d[a.id] || 5}</b>
+      ${ui.wheelHint === a.id ? `<div class="whint">${WHEEL_Q[a.id]}<div class="whint-s">Сейчас: <b>${d[a.id] || 5}</b> — <span id="wq-${a.id}">${scoreWord(d[a.id] || 5)}</span></div></div>` : ''}
+    </div>`).join('')}
       <button type="button" class="btn" data-act="saveWheel">Сохранить оценку · +20 XP</button>
       <div class="meta" style="text-align:center;margin-top:6px">Опыт дают раз в неделю. Удобно пересматривать колесо раз в месяц</div>
     </div>
@@ -2043,6 +2086,7 @@ const A = {
     refreshSheets();
   },
   goalMode(d) { ui.goalMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
+  wheelHint(d) { ui.wheelHint = ui.wheelHint === d.v ? null : d.v; haptic.sel(); render(); },
   newGoal(d) { goalEditSheet(null, d.v); },
   editGoal(d) { goalEditSheet(d.id); },
   goalSheet(d) { haptic.sel(); goalSheet(d.id); },
@@ -2345,6 +2389,8 @@ document.addEventListener('input', e => {
     const id = e.target.dataset.wheel, v = +e.target.value;
     ui.wheelDraft[id] = v;
     const lbl = document.getElementById('wv-' + id); if (lbl) lbl.textContent = v;
+    const wq = document.getElementById('wq-' + id);
+    if (wq) { wq.textContent = scoreWord(v); wq.previousElementSibling.textContent = v; }
     e.target.style.setProperty('--p', (v - 1) / 9 * 100 + '%');
     const last = S.wheel[S.wheel.length - 1];
     const box = document.getElementById('wheelBox'); if (box) box.innerHTML = wheelSvg(ui.wheelDraft, last ? last.s : null);
