@@ -184,6 +184,12 @@ main{max-width:560px;margin:0 auto;padding:calc(14px + var(--top)) 16px 72px}
 .cal button.miss{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 55%,transparent)}
 .cal button.today{outline:2px solid var(--accent);outline-offset:1px}
 .cal button:disabled{opacity:.25;background:none;cursor:default}
+/* режим привычки в форме и прогресс «N раз в неделю» */
+form.mode-days .only-weekly,form.mode-weekly .only-days{display:none}
+.wkprog{margin-top:10px}
+.wkprog .bar{height:7px;margin-bottom:4px}
+.wkprog span{font-size:12.5px;color:var(--hint)}
+.hedit{border:0;background:var(--field);width:34px;height:34px;border-radius:50%;font-size:15px;flex:none;padding:0}
 .calnav{display:flex;align-items:center;justify-content:space-between;text-align:center;margin-bottom:12px}
 .calnav b{font-size:16px}
 .calnav button{border:0;background:var(--field);width:36px;height:36px;border-radius:50%;font-size:22px;line-height:1;padding:0 0 3px}
@@ -654,10 +660,29 @@ document.addEventListener('visibilitychange', () => {
 
 /* ================= domain ================= */
 const activeHabits = () => S.habits.filter(h => !h.archived);
-const scheduled = (h, s) => h.days.includes(wd(s));
+// Два режима привычки: 'days' — конкретные дни недели; 'weekly' — N раз в неделю в любые дни
+const isWeekly = h => h.mode === 'weekly';
+const scheduled = (h, s) => !isWeekly(h) && h.days.includes(wd(s));
 const isDone = (h, s) => !!h.log[s];
+// Сколько отметок в календарной неделе (Пн–Вс), куда входит день s
+const weekCount = (h, s) => { const ws = weekStart(s); let n = 0; for (let i = 0; i < 7; i++) if (h.log[addDays(ws, i)]) n++; return n; };
+// Показывать ли привычку в планах на день: по графику, или недельная норма ещё не набрана
+const dueOn = (h, s) => isWeekly(h) ? (isDone(h, s) || weekCount(h, s) < h.perWeek) : scheduled(h, s);
+const nextBonus = h => isWeekly(h) ? 6 + Math.min(streak(h) * 2, 14) : habitBonus(streak(h));
+
+// Серия для «N раз в неделю» — сколько недель подряд норма выполнена (текущая неделя не рвёт серию)
+function weeklyStreak(h) {
+  const cur = weekStart(today());
+  let ws = cur, n = 0;
+  for (let i = 0; i < 300 && addDays(ws, 6) >= h.created; i++, ws = addDays(ws, -7)) {
+    if (weekCount(h, ws) >= h.perWeek) n++;
+    else if (ws !== cur) break;
+  }
+  return n;
+}
 
 function streak(h) {
+  if (isWeekly(h)) return weeklyStreak(h);
   const T = today();
   let s = T, n = 0;
   for (let i = 0; i < 1000 && s >= h.created; i++, s = addDays(s, -1)) {
@@ -674,6 +699,21 @@ function habitHistory(h) {
   const logDays = Object.keys(h.log).sort();
   let s = logDays.length && logDays[0] < h.created ? logDays[0] : h.created;
   let cur = 0;
+  if (isWeekly(h)) {
+    // идём по неделям: бонус = 2 XP за каждую неделю серии (до +14)
+    const curWk = weekStart(T);
+    for (let ws = weekStart(s), i = 0; ws <= curWk && i < 600; ws = addDays(ws, 7), i++) {
+      for (let d = 0; d < 7; d++) {
+        const day = addDays(ws, d);
+        if (day > T || !isDone(h, day)) continue;
+        const x = 6 + Math.min(cur * 2, 14);
+        r.xp += x; r.gold += 2; r.n++; r.days.push([day, x]);
+      }
+      if (weekCount(h, ws) >= h.perWeek) { cur++; r.best = Math.max(r.best, cur); }
+      else if (ws !== curWk) cur = 0;
+    }
+    return r;
+  }
   for (let i = 0; s <= T && i < 3000; s = addDays(s, 1), i++) {
     const sch = scheduled(h, s), dn = isDone(h, s);
     if (dn) {
@@ -686,6 +726,15 @@ function habitHistory(h) {
 }
 function habitRate(h, from, to) {
   let tot = 0, ok = 0;
+  if (isWeekly(h)) {
+    const start = from > h.created ? from : h.created, curWk = weekStart(today());
+    for (let ws = weekStart(start); ws <= to; ws = addDays(ws, 7)) {
+      const c = weekCount(h, ws);
+      ok += Math.min(c, h.perWeek);
+      tot += ws === curWk ? Math.min(c, h.perWeek) : h.perWeek; // текущая неделя ещё идёт — не штрафуем
+    }
+    return tot ? ok / tot : null;
+  }
   for (let s = from > h.created ? from : h.created; s <= to; s = addDays(s, 1)) {
     if (!scheduled(h, s)) continue;
     tot++; if (isDone(h, s)) ok++;
@@ -698,6 +747,8 @@ function dayHabitRatio(s) {
   return hs.filter(h => isDone(h, s)).length / hs.length;
 }
 const tasksDoneOn = s => S.tasks.filter(t => t.done && t.doneAt === s).length;
+const timesWord = n => `${n} ${plural(n, 'раз', 'раза', 'раз')} в неделю`;
+const schedLabel = h => isWeekly(h) ? timesWord(h.perWeek) : daysLabel(h.days);
 const daysLabel = d => {
   const k = [...d].sort().join('');
   if (k === '0123456') return 'Каждый день';
@@ -745,7 +796,7 @@ function bossState(all) {
   return { ...b, wk, dmg, left: Math.max(0, b.hp - dmg), def: BOSSES[b.idx], dead: dmg >= b.hp, daysLeft: 6 - wd(T) };
 }
 function dayCtx(T) {
-  const hT = activeHabits().filter(h => scheduled(h, T));
+  const hT = activeHabits().filter(h => dueOn(h, T));
   const doneT = S.tasks.filter(t => t.done && t.doneAt === T);
   return { T, hT, hDone: hT.filter(h => isDone(h, T)).length, doneT, open: S.tasks.filter(t => !t.done) };
 }
@@ -1003,7 +1054,7 @@ function viewCamp(g) {
   <div class="sec"><span class="tape">Квесты дня</span> <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
   ${questList(qs)}
   ${c.hT.length ? `<div class="sec"><span class="tape">Привычки на сегодня</span> <span class="r">${c.hDone}/${c.hT.length}</span></div>
-  <div class="pills">${c.hT.map(h => `<button type="button" class="pill ${isDone(h, T) ? 'on' : ''}" style="--c:${h.color}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}"><span class="em">${h.emoji}</span><span class="nm">${esc(h.name)}</span><span class="px">+${habitBonus(streak(h))}</span></button>`).join('')}</div>` : ''}
+  <div class="pills">${c.hT.map(h => `<button type="button" class="pill ${isDone(h, T) ? 'on' : ''}" style="--c:${h.color}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}"><span class="em">${h.emoji}</span><span class="nm">${esc(h.name)}</span><span class="px">+${nextBonus(h)}</span></button>`).join('')}</div>` : ''}
   <div class="sec"><span class="tape">Задачи на сегодня</span></div>
   <div class="list">
     ${undone.map(taskRow).join('')}
@@ -1095,17 +1146,21 @@ function viewHabits() {
   if (!hs.length) return `<div class="card empty"><div class="big">🌱</div><b>Привычек пока нет</b><p class="meta">Каждая отметка — опыт, а серии дают бонус до +14 XP.</p><button class="btn" data-act="newHabit">Добавить привычку</button></div>`;
   const week = Array.from({ length: 7 }, (_, i) => addDays(T, i - 6));
   return `<div class="sec"><span class="tape">Мои привычки · ${hs.length}</span></div>` + hs.map(h => {
-    const st = streak(h);
+    const st = streak(h), wk = isWeekly(h);
+    const wc = wk ? weekCount(h, T) : 0;
     return `<div class="card habit" style="--c:${h.color}">
       <div class="hhead">
         <div class="hemoji tap" data-act="habitStats" data-id="${h.id}">${h.emoji}</div>
         <div class="grow tbody" data-act="habitStats" data-id="${h.id}">
           <div class="hname">${esc(h.name)}</div>
-          <div class="meta">${st ? `🔥 ${st} · ` : ''}${daysLabel(h.days)} · <span style="color:var(--xp);font-weight:600">+${habitBonus(st)} XP</span></div>
+          <div class="meta">${st ? `🔥 ${st}${wk ? ' нед.' : ''} · ` : ''}${schedLabel(h)} · <span style="color:var(--xp);font-weight:600">+${nextBonus(h)} XP</span></div>
         </div>
+        <button type="button" class="hedit" data-act="editHabit" data-id="${h.id}" aria-label="Изменить привычку">✏️</button>
         <button type="button" class="hcheck ${isDone(h, T) ? 'on' : ''}" data-act="toggleHabit" data-id="${h.id}" data-day="${T}" aria-label="Отметить сегодня">✓</button>
       </div>
-      <div class="week">${week.map(s => `<button type="button" class="day ${isDone(h, s) ? 'on' : ''} ${scheduled(h, s) ? '' : 'off'} ${s === T ? 'today' : ''}" data-act="toggleHabit" data-id="${h.id}" data-day="${s}"><i></i><span>${WD[wd(s)]}</span></button>`).join('')}</div>
+      ${wk ? `<div class="wkprog"><div class="bar"><i style="width:${Math.min(100, wc / h.perWeek * 100)}%;background:${h.color}"></i></div>
+        <span>${wc >= h.perWeek ? `✨ Норма недели выполнена (${wc}/${h.perWeek})` : `На этой неделе: ${wc} из ${h.perWeek}`}</span></div>` : ''}
+      <div class="week">${week.map(s => `<button type="button" class="day ${isDone(h, s) ? 'on' : ''} ${wk || scheduled(h, s) ? '' : 'off'} ${s === T ? 'today' : ''}" data-act="toggleHabit" data-id="${h.id}" data-day="${s}"><i></i><span>${WD[wd(s)]}</span></button>`).join('')}</div>
     </div>`;
   }).join('');
 }
@@ -1268,21 +1323,35 @@ function habitSheet(id) {
   const emoji = h ? h.emoji : EMOJIS[0];
   const color = h ? h.color : COLORS[S.habits.length % COLORS.length];
   const days = h ? h.days : [0, 1, 2, 3, 4, 5, 6];
-  openSheet(h ? 'Привычка' : 'Новая привычка', `<form data-form="habit">
+  const mode = h && isWeekly(h) ? 'weekly' : 'days';
+  const perWeek = h && h.perWeek ? h.perWeek : 3;
+  openSheet(h ? 'Изменить привычку' : 'Новая привычка', `<form data-form="habit" class="mode-${mode}">
     <input type="hidden" name="id" value="${h ? h.id : ''}">
     <input type="hidden" name="emoji" value="${emoji}">
     <input type="hidden" name="color" value="${color}">
+    <input type="hidden" name="mode" value="${mode}">
+    <input type="hidden" name="perWeek" value="${perWeek}">
     <div class="field"><input name="name" placeholder="Например: читать 20 минут" value="${h ? esc(h.name) : ''}" required autocomplete="off" maxlength="80"></div>
     <div class="lbl">Иконка</div>
     <div class="emojis">${EMOJIS.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-act="pick" data-name="emoji" data-v="${e}">${e}</button>`).join('')}</div>
     <div class="lbl">Цвет</div>
     <div class="colors">${COLORS.map(c => `<button type="button" style="--c:${c}" class="${c === color ? 'on' : ''}" data-act="pick" data-name="color" data-v="${c}" aria-label="${c}"></button>`).join('')}</div>
-    <div class="lbl">Дни недели</div>
-    <div class="days7">${WD.map((l, i) => `<button type="button" class="${days.includes(i) ? 'on' : ''}" data-act="pickDay" data-v="${i}">${l}</button>`).join('')}</div>
-    <div class="chips" style="margin-top:8px">
-      <button type="button" class="chip" data-act="preset" data-v="0123456">Каждый день</button>
-      <button type="button" class="chip" data-act="preset" data-v="01234">Будни</button>
-      <button type="button" class="chip" data-act="preset" data-v="56">Выходные</button>
+    <div class="lbl">Как часто</div>
+    <div class="seg">
+      <button type="button" class="${mode === 'days' ? 'on' : ''}" data-act="schedMode" data-v="days">По дням недели</button>
+      <button type="button" class="${mode === 'weekly' ? 'on' : ''}" data-act="schedMode" data-v="weekly">Раз в неделю</button>
+    </div>
+    <div class="only-days">
+      <div class="days7">${WD.map((l, i) => `<button type="button" class="${days.includes(i) ? 'on' : ''}" data-act="pickDay" data-v="${i}">${l}</button>`).join('')}</div>
+      <div class="chips" style="margin-top:8px">
+        <button type="button" class="chip" data-act="preset" data-v="0123456">Каждый день</button>
+        <button type="button" class="chip" data-act="preset" data-v="01234">Будни</button>
+        <button type="button" class="chip" data-act="preset" data-v="56">Выходные</button>
+      </div>
+    </div>
+    <div class="only-weekly">
+      <div class="days7">${[1, 2, 3, 4, 5, 6, 7].map(n => `<button type="button" class="${n === perWeek ? 'on' : ''}" data-act="pick" data-name="perWeek" data-v="${n}">${n}</button>`).join('')}</div>
+      <div class="meta" style="margin:8px 4px 0">Сколько раз в неделю — в любые дни. Серия считается неделями, в которые норма выполнена.</div>
     </div>
     <button class="btn">${h ? 'Сохранить' : 'Создать'}</button>
     ${h ? `<button type="button" class="btn ghost" data-act="delHabit" data-id="${h.id}">Удалить привычку</button>` : ''}
@@ -1297,7 +1366,7 @@ function dayBody(s) {
   const xp = all.dayXp[s] || 0;
   const done = S.tasks.filter(t => t.done && t.doneAt === s).sort(byPrio);
   const missed = s <= T ? S.tasks.filter(t => !t.done && t.due === s).sort(byPrio) : [];
-  const hs = activeHabits().filter(h => (h.created <= s && scheduled(h, s)) || isDone(h, s));
+  const hs = activeHabits().filter(h => (h.created <= s && (scheduled(h, s) || isWeekly(h))) || isDone(h, s));
   const r = dayHabitRatio(s);
   const quests = Object.entries(S.claims).filter(([, c]) => c.d === s).map(([k]) => QUESTS[k.split(':')[1]]).filter(Boolean);
   const nothing = !done.length && !missed.length && !hs.length && !quests.length;
@@ -1308,7 +1377,7 @@ function dayBody(s) {
     </div>
     ${hs.length ? `<div class="lbl">Привычки · нажми, чтобы отметить</div><div class="list">${hs.map(h => `<div class="row" style="--c:${h.color}">
       <div class="hemoji sm">${h.emoji}</div>
-      <div class="grow"><div class="ttl">${esc(h.name)}</div>${scheduled(h, s) ? '' : '<div class="meta">вне графика</div>'}</div>
+      <div class="grow"><div class="ttl">${esc(h.name)}</div>${isWeekly(h) ? `<div class="meta">${weekCount(h, s)}/${h.perWeek} ${weekStart(s) === weekStart(T) ? 'на этой неделе' : 'за ту неделю'}</div>` : scheduled(h, s) ? '' : '<div class="meta">вне графика</div>'}</div>
       <button type="button" class="chk ${isDone(h, s) ? 'on' : ''}" data-act="dayHabit" data-id="${h.id}" data-day="${s}" aria-label="Отметить"></button>
     </div>`).join('')}</div>` : ''}
     ${done.length ? `<div class="lbl">Выполненные задачи</div><div class="list">${done.map(t => `<div class="row"><span class="qdone" style="width:auto;font-size:16px">✓</span>
@@ -1340,31 +1409,36 @@ function habitStatBody(h) {
     if (s > T) { cal += `<button type="button" disabled>${n}</button>`; continue; }
     const sch = scheduled(h, s) && s >= h.created;
     if (sch) { mPlan++; if (isDone(h, s)) mDone++; }
-    const cls = [isDone(h, s) ? 'on' : sch && s < T ? 'miss' : '', scheduled(h, s) ? '' : 'off', s === T ? 'today' : ''].join(' ');
+    if (isWeekly(h) && isDone(h, s)) mDone++;
+    const cls = [isDone(h, s) ? 'on' : sch && s < T ? 'miss' : '', isWeekly(h) || scheduled(h, s) ? '' : 'off', s === T ? 'today' : ''].join(' ');
     cal += `<button type="button" class="${cls}" data-act="dayHabit" data-id="${h.id}" data-day="${s}">${n}</button>`;
   }
   const pc = x => x === null ? '—' : Math.round(x * 100) + '%';
+  const monthMeta = isWeekly(h) ? `${mDone} ${plural(mDone, 'отметка', 'отметки', 'отметок')} за месяц`
+    : mPlan ? `${mDone} из ${mPlan} · ${Math.round(mDone / mPlan * 100)}%` : 'нет запланированных дней';
+  const wc = isWeekly(h) ? weekCount(h, T) : 0;
   const calBlock = `<div class="card" style="--c:${h.color}">
       <div class="calnav"><button type="button" data-act="calMonth" data-v="-1" aria-label="Предыдущий месяц">‹</button>
-        <div><b>${MONTHS_N[md.getMonth()]} ${md.getFullYear()}</b><div class="meta">${mPlan ? `${mDone} из ${mPlan} · ${Math.round(mDone / mPlan * 100)}%` : 'нет запланированных дней'}</div></div>
+        <div><b>${MONTHS_N[md.getMonth()]} ${md.getFullYear()}</b><div class="meta">${monthMeta}</div></div>
         <button type="button" data-act="calMonth" data-v="1" ${ui.calOff >= 0 ? 'disabled' : ''} aria-label="Следующий месяц">›</button></div>
       <div class="cal">${cal}</div>
-      <div class="legend" style="justify-content:center;gap:10px;margin-top:10px">
+      ${isWeekly(h) ? `<div class="wkprog" style="margin-top:12px"><div class="bar"><i style="width:${Math.min(100, wc / h.perWeek * 100)}%;background:${h.color}"></i></div>
+        <span>На этой неделе: ${wc} из ${h.perWeek}${wc >= h.perWeek ? ' ✨' : ''}</span></div>` : `<div class="legend" style="justify-content:center;gap:10px;margin-top:10px">
         <span><i style="background:${h.color}"></i> сделано</span>
         <span><i style="box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 55%,transparent)"></i> пропущено</span>
-        <span><i style="background:var(--field);opacity:.5"></i> выходной</span></div>
+        <span><i style="background:var(--field);opacity:.5"></i> выходной</span></div>`}
     </div>`;
   return `<div class="meta" style="margin:-6px 4px 10px">Нажми на день, чтобы отметить или снять отметку</div>
     ${calBlock}
     <div class="kpis">
-      <div class="kpi"><b>🔥 ${streak(h)}</b><span>текущая серия</span></div>
-      <div class="kpi"><b>🏅 ${hist.best}</b><span>рекорд серии</span></div>
+      <div class="kpi"><b>🔥 ${streak(h)}</b><span>${isWeekly(h) ? 'недель подряд' : 'текущая серия'}</span></div>
+      <div class="kpi"><b>🏅 ${hist.best}</b><span>${isWeekly(h) ? 'рекорд (недель)' : 'рекорд серии'}</span></div>
       <div class="kpi"><b>${hist.n}</b><span>всего отметок</span></div>
       <div class="kpi"><b style="color:var(--xp)">${hist.xp}</b><span>опыта заработано</span></div>
     </div>
     <div class="card"><div class="hs-top"><span>За 30 дней</span><b>${pc(r30)}</b></div><div class="bar"><i style="width:${r30 === null ? 0 : r30 * 100}%;background:${h.color}"></i></div>
       <div class="hs-top" style="margin-top:8px"><span>За 90 дней</span><b>${pc(r90)}</b></div><div class="bar"><i style="width:${r90 === null ? 0 : r90 * 100}%;background:${h.color}"></i></div></div>
-    <div class="meta" style="margin:0 4px">${daysLabel(h.days)} · следующая отметка даст <b style="color:var(--xp)">+${habitBonus(streak(h))} XP</b></div>
+    <div class="meta" style="margin:0 4px">${schedLabel(h)} · следующая отметка даст <b style="color:var(--xp)">+${nextBonus(h)} XP</b></div>
     <button type="button" class="btn alt" data-act="editHabit" data-id="${h.id}">✏️ Изменить привычку</button>`;
 }
 function habitStatsSheet(id) {
@@ -1515,6 +1589,13 @@ const A = {
     haptic.sel();
   },
   pickDay(d, el) { el.classList.toggle('on'); haptic.sel(); },
+  schedMode(d, el) {
+    const f = el.closest('form');
+    f.elements.mode.value = d.v;
+    f.classList.remove('mode-days', 'mode-weekly'); f.classList.add('mode-' + d.v);
+    el.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el));
+    haptic.sel();
+  },
   preset(d, el) {
     el.closest('form').querySelectorAll('[data-act="pickDay"]').forEach(b => b.classList.toggle('on', d.v.includes(b.dataset.v)));
     haptic.sel();
@@ -1568,9 +1649,12 @@ const F = {
   habit(f) {
     const e = f.elements;
     const name = e.name.value.trim(); if (!name) return;
-    const days = [...f.querySelectorAll('[data-act="pickDay"].on')].map(b => +b.dataset.v);
-    if (!days.length) { safe(() => ver('6.2') ? tg.showAlert('Выбери хотя бы один день') : alert('Выбери хотя бы один день')); return; }
-    const data = { name, emoji: e.emoji.value, color: e.color.value, days };
+    const mode = e.mode.value === 'weekly' ? 'weekly' : 'days';
+    let days = [...f.querySelectorAll('[data-act="pickDay"].on')].map(b => +b.dataset.v);
+    if (mode === 'weekly') days = [0, 1, 2, 3, 4, 5, 6];
+    else if (!days.length) { safe(() => ver('6.2') ? tg.showAlert('Выбери хотя бы один день') : alert('Выбери хотя бы один день')); return; }
+    const perWeek = Math.min(7, Math.max(1, +e.perWeek.value || 3));
+    const data = { name, emoji: e.emoji.value, color: e.color.value, days, mode, perWeek };
     closeSheet();
     change(null, () => {
       if (e.id.value) Object.assign(S.habits.find(h => h.id === e.id.value), data);
