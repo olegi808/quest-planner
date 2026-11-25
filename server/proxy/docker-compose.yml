@@ -1,0 +1,23 @@
+# Общий вход для всех сайтов сервера: Caddy принимает HTTPS (80/443) и раздаёт запросы по контейнерам.
+# Новый сайт = новый блок в Caddyfile + `docker compose restart caddy`.
+services:
+  caddy:
+    image: caddy:2.8.4
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # сертификаты Let's Encrypt (тот же том, что был у leadbot)
+    restart: unless-stopped
+    networks: [leadbot_default]
+
+volumes:
+  caddy_data:
+    external: true
+    name: leadbot_caddy_data
+
+networks:
+  leadbot_default:
+    external: true

@@ -1,0 +1,14 @@
+# Планер: веб-приложение + резервные копии данных. HTTPS даёт Caddy из проекта leadbot.
+services:
+  planner:
+    build: .
+    env_file: .env            # BOT_TOKEN=... (токен бота «Квест планер»)
+    volumes:
+      - ./data:/app/data      # база с копиями данных пользователей
+      - ./web:/app/web:ro     # index.html мини-аппа
+    restart: unless-stopped
+    networks: [leadbot_default]
+
+networks:
+  leadbot_default:
+    external: true

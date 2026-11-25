@@ -734,7 +734,7 @@ html[data-theme=dark] .asc{border-left-color:#c97c8a}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-25.1';
+const APP_VERSION = '2026-11-25.3';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -958,6 +958,17 @@ async function cloudSave() {
     if (saveAgain) { saveAgain = false; setTimeout(cloudSave, 300); }
   }
 }
+// ---- копия на нашем сервере (подпись Telegram проверяется на сервере) ----
+const API = inTG && !/github\.io$/.test(location.hostname) ? 'api/' : null;
+let serverTimer = null;
+async function api(path, payload, opts = {}) {
+  if (!API) return null;
+  try {
+    const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData: tg.initData, ...payload }), ...opts });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+}
+const serverSave = keepalive => API && api('save', { data: S }, keepalive ? { keepalive: true } : {});
 function adopt(x) {
   S = Object.assign(blank(), x);
   S.bank = Object.assign(blank().bank, S.bank || {});
@@ -969,11 +980,13 @@ function adopt(x) {
 async function load() {
   let local = null;
   try { local = JSON.parse(localStorage.getItem(LS_KEY)); } catch {}
+  const srvP = api('load', {});
   let cr = await cloudLoad();
   if (cr.err) cr = await cloudLoad(); // вторая попытка
+  const srv = ((await srvP) || {}).data || null;
   if (cr.err) cloudBlocked = true;
   const cloud = cr.data || null;
-  const cands = [local, cloud].filter(x => x && x.v);
+  const cands = [local, cloud, srv].filter(x => x && x.v);
   const pick = cands.slice().sort((x, y) => (y.updated || 0) - (x.updated || 0))[0];
   if (pick) adopt(pick);
   // если другая копия заметно полнее выбранной — откладываем её, чтобы предложить восстановить
@@ -993,6 +1006,8 @@ function save() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch {}
   clearTimeout(saveTimer);
   saveTimer = setTimeout(cloudSave, 700);
+  clearTimeout(serverTimer);
+  serverTimer = setTimeout(() => serverSave(), 1500);
 }
 // Резервная копия перед очисткой: на устройстве и в облаке (отдельный слот «z»)
 async function backupNow() {
@@ -1012,6 +1027,7 @@ async function loadBackup() {
 function getRescue() { try { const r = JSON.parse(localStorage.getItem(RESCUE_KEY)); return r && dataSize(r) > dataSize(S) ? r : null; } catch { return null; } }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && saveTimer) { clearTimeout(saveTimer); saveTimer = null; cloudSave(); }
+  if (document.hidden && serverTimer) { clearTimeout(serverTimer); serverTimer = null; serverSave(true); }
 });
 
 /* ================= domain ================= */
@@ -1592,6 +1608,7 @@ function viewProfile(g) {
   return `${heroCard(g, { big: true })}
   <div class="theme-row"><span class="meta">Тема</span><div class="seg">${[['light', '☀️ Светлая'], ['dark', '🌙 Тёмная'], ['auto', '📱 Авто']].map(([k, l]) => `<button type="button" class="${(S.theme || 'auto') === k ? 'on' : ''}" data-act="setTheme" data-v="${k}">${l}</button>`).join('')}</div></div>
   ${ui.backup ? `<div class="card tip demo-note"><b>↩️ Есть копия до очистки</b><div class="meta" style="margin:4px 0 10px">${(ui.backup.tasks || []).length} задач, ${(ui.backup.habits || []).length} привычек, ${(ui.backup.fin || []).length} операций${ui.backup.backupAt ? ' · ' + new Date(ui.backup.backupAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : ''}</div><button type="button" class="btn" style="margin-top:0" data-act="restoreBackup">Вернуть эти данные</button></div>` : ''}
+  ${API ? '<div class="reset-row"><span class="meta">Копии данных на сервере</span><button type="button" class="chip" data-act="serverVersions">🗂 Открыть</button></div>' : ''}
   <div class="reset-row"><span class="meta">Хочешь начать заново?</span><button type="button" class="chip" data-act="resetAll">🧹 Очистить всё</button></div>
   <div class="kpis">
     <div class="kpi"><b>${a.xp}</b><span>опыта всего</span></div>
@@ -2618,6 +2635,26 @@ const A = {
     t.done ? haptic.ok() : haptic.tap();
     refreshSheets();
   },
+  async serverVersions() {
+    openSheet('Копии на сервере', '<div class="empty meta">Загружаю…</div>');
+    const r = await api('versions', {});
+    const box = sheetEl && sheetEl.querySelector('.sheet');
+    if (!box) return;
+    const list = (r && r.versions) || [];
+    const fmt = v => new Date(v.updated).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    box.querySelector('.empty').outerHTML = list.length
+      ? `<div class="meta" style="margin:0 4px 10px">Сервер хранит копию за каждый день (60 дней) и отдельно — версию перед любой очисткой.</div><div class="list">${list.map(v => `<div class="row">
+          <div class="grow"><div class="ttl">${v.key.startsWith('before-') ? '🧹 Перед очисткой' : v.key.startsWith('device-') ? '📱 С устройства (старый адрес)' : '📅 Копия за день'}</div><div class="meta">${fmt(v)} · записей: ${v.size}</div></div>
+          <button type="button" class="chip" data-act="serverRestore" data-v="${esc(v.key)}">Вернуть</button></div>`).join('')}</div>`
+      : '<div class="empty">Копий пока нет — они появятся после первого сохранения</div>';
+  },
+  async serverRestore(d) {
+    if (!(await ask('Вернуть данные из этой копии? Текущие данные сначала тоже сохранятся в копию.'))) return;
+    const r = await api('restore', { key: d.v });
+    if (!r || !r.data) { toast('⚠️', 'Не получилось', 'Попробуй ещё раз чуть позже'); return; }
+    await backupNow(); adopt(r.data); cloudBlocked = false; save(); closeSheet(); render(); haptic.ok(); confetti(60);
+    toast('🗂', 'Данные восстановлены', 'Копия с сервера загружена');
+  },
   async restoreRescue() {
     const r = getRescue(); if (!r) return;
     if (!(await ask('Вернуть более полную копию данных? Текущие данные будут заменены.'))) return;
@@ -3015,7 +3052,22 @@ function applyTheme() {
   if (ver('7.10')) safe(() => tg.setBottomBarColor(bar));
 }
 safe(() => matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!inTG) applyTheme(); }));
+// Планер переехал на наш сервер. Со старого адреса: сохраняем копии данных этого устройства на сервер и уходим туда.
+const NEW_HOME = 'https://planner.209-38-205-220.sslip.io/';
+async function moveToNewHome() {
+  if (!inTG || !/github\.io$/.test(location.hostname)) return false;
+  const send = [];
+  for (const [key, kind] of [[LS_KEY, 'local'], [RESCUE_KEY, 'rescue'], [BK_KEY, 'backup']]) {
+    let d = null; try { d = JSON.parse(localStorage.getItem(key)); } catch {}
+    if (d && d.v && dataSize(d)) send.push(fetch(NEW_HOME + 'api/stash', { method: 'POST', mode: 'cors', keepalive: true,
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData: tg.initData, kind, data: d }) }).catch(() => {}));
+  }
+  await Promise.race([Promise.all(send), new Promise(r => setTimeout(r, 4000))]);
+  location.replace(NEW_HOME + location.hash);
+  return true;
+}
 async function boot() {
+  if (await moveToNewHome()) return;
   if (tg) {
     safe(() => tg.ready());
     safe(() => tg.expand());

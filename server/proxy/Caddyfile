@@ -1,0 +1,11 @@
+# Сайты на сервере 209.38.205.220
+
+# веб-панель leadbot
+209-38-205-220.sslip.io {
+	reverse_proxy leadbot-bot-1:8080
+}
+
+# уютный планер (мини-апп Telegram)
+planner.209-38-205-220.sslip.io {
+	reverse_proxy planner-planner-1:8090
+}
