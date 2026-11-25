@@ -734,7 +734,7 @@ html[data-theme=dark] .asc{border-left-color:#c97c8a}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-25.3';
+const APP_VERSION = '2026-11-25.5';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -898,7 +898,7 @@ const homeCard = closable => `<div class="card tip home">${closable ? '<button t
 const LS_KEY = 'tg-planner-v1';
 const BK_KEY = 'tg-planner-backup';      // копия перед очисткой
 const RESCUE_KEY = 'tg-planner-rescue';  // более полная копия, найденная при загрузке
-const CHUNK = 4000;
+const CHUNK = 1000; // лимит Telegram — 4096 байт на значение; кириллица 2 байта, эмодзи до 4 — 1000 символов влезают всегда
 const cs = ver('6.9') ? tg.CloudStorage : null;
 let cloudSlot = null, saveTimer = null, saving = false, saveAgain = false;
 let cloudBlocked = false; // облако не прочиталось — не пишем туда, чтобы не затереть данные пустыми
@@ -969,6 +969,29 @@ async function api(path, payload, opts = {}) {
   } catch { return null; }
 }
 const serverSave = keepalive => API && api('save', { data: S }, keepalive ? { keepalive: true } : {});
+// Разовая проверка облака Telegram: перебираем все наборы частей (c/a/b/z…) и отправляем найденное на сервер
+async function cloudScan(localCopy) {
+  if (!cs || !API) return;
+  const info = { v: APP_VERSION, platform: tg.platform, tgVersion: tg.version, blocked: cloudBlocked, current: dataSize(S), hero: !!S.hero, local: dataSize(localCopy) };
+  const keys = await csCall('getKeys');
+  if (!Array.isArray(keys)) { info.err = 'getKeys failed'; api('diag', { info }); return; }
+  info.keys = keys.length;
+  const groups = {};
+  keys.forEach(k => { const m = k.match(/^([a-z])(\d+)$/); if (m) (groups[m[1]] = groups[m[1]] || []).push(+m[2]); });
+  info.groups = Object.fromEntries(Object.entries(groups).map(([p, i]) => [p, i.length + ' parts, max ' + Math.max(...i)]));
+  info.meta = await csCall('getItem', 'meta');
+  info.zmeta = await csCall('getItem', 'zmeta');
+  info.other = keys.filter(k => !/^[a-z]\d+$/.test(k));
+  info.found = {};
+  for (const [p, idx] of Object.entries(groups)) {
+    const r = await cloudRead(p, Math.max(...idx) + 1);
+    if (r.data) {
+      info.found[p] = { size: dataSize(r.data), hero: r.data.hero && r.data.hero.name, updated: r.data.updated, tasks: (r.data.tasks || []).length, habits: (r.data.habits || []).length, fin: (r.data.fin || []).length };
+      if (dataSize(r.data)) api('stash', { kind: 'cloud-' + p, data: r.data });
+    } else info.found[p] = 'не собирается (части неполные)';
+  }
+  api('diag', { info });
+}
 function adopt(x) {
   S = Object.assign(blank(), x);
   S.bank = Object.assign(blank().bank, S.bank || {});
@@ -992,6 +1015,7 @@ async function load() {
   // если другая копия заметно полнее выбранной — откладываем её, чтобы предложить восстановить
   for (const c of cands) if (c !== pick && dataSize(c) > dataSize(pick) + 2) { try { localStorage.setItem(RESCUE_KEY, JSON.stringify(c)); } catch {} }
   if (cloudBlocked) setTimeout(retryCloud, 4000);
+  try { if (localStorage.getItem('cloud-scan') !== today()) { localStorage.setItem('cloud-scan', today()); setTimeout(() => cloudScan(local), 1500); } } catch {}
 }
 // Облако не ответило при старте — пробуем ещё, и если там данные полнее, предлагаем их
 async function retryCloud() {

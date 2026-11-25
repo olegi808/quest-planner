@@ -151,6 +151,20 @@ async def api_stash(request: web.Request):
     return web.json_response({"ok": True})
 
 
+db.execute("create table if not exists diag (user_id integer, at integer, info text)")
+
+
+async def api_diag(request: web.Request):
+    """Техсводка с устройства: что лежит в облаке Telegram (только количества, без содержимого)."""
+    req = await body(request)
+    uid = user_from_init(req.get("initData"))
+    info = json.dumps(req.get("info"), ensure_ascii=False)[:20000]
+    db.execute("insert into diag(user_id,at,info) values(?,?,?)", (uid, int(time.time() * 1000), info))
+    db.commit()
+    print("DIAG", uid, info, flush=True)
+    return web.json_response({"ok": True})
+
+
 async def index(request: web.Request):
     # без кэша — чтобы обновления приложения доходили сразу
     return web.FileResponse(WEB_DIR / "index.html", headers={"Cache-Control": "no-cache"})
@@ -159,6 +173,7 @@ async def index(request: web.Request):
 app = web.Application(client_max_size=MAX_BODY, middlewares=[cors_for_old_origin])
 app.add_routes([
     web.post("/api/stash", api_stash),
+    web.post("/api/diag", api_diag),
     web.options("/api/stash", lambda r: web.Response()),
     web.get("/", index),
     web.get("/index.html", index),
