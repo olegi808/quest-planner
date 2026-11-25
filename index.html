@@ -734,7 +734,7 @@ html[data-theme=dark] .asc{border-left-color:#c97c8a}
 (() => {
 'use strict';
 // Версия сборки: меняется при каждой публикации. Нужна, чтобы обходить кэш Telegram/GitHub Pages
-const APP_VERSION = '2026-11-24.7';
+const APP_VERSION = '2026-11-25.1';
 // Если на сервере уже новая версия — один раз перезагружаемся на неё (данные не трогаются)
 function checkUpdate() {
   try {
@@ -896,13 +896,16 @@ const homeCard = closable => `<div class="card tip home">${closable ? '<button t
   <div class="meta">Открывай одним касанием, как обычное приложение</div></div></div>
   <button type="button" class="btn" style="margin-top:12px" data-act="addHome">Добавить иконку</button></div>`;
 const LS_KEY = 'tg-planner-v1';
+const BK_KEY = 'tg-planner-backup';      // копия перед очисткой
+const RESCUE_KEY = 'tg-planner-rescue';  // более полная копия, найденная при загрузке
 const CHUNK = 4000;
 const cs = ver('6.9') ? tg.CloudStorage : null;
-let cloudN = 0, saveTimer = null;
+let cloudSlot = null, saveTimer = null, saving = false, saveAgain = false;
+let cloudBlocked = false; // облако не прочиталось — не пишем туда, чтобы не затереть данные пустыми
 
 const csCall = (method, ...args) => new Promise(res => {
   let done = false;
-  const t = setTimeout(() => { if (!done) { done = true; res(null); } }, 5000);
+  const t = setTimeout(() => { if (!done) { done = true; res(null); } }, 8000);
   try {
     cs[method](...args, (err, val) => {
       if (done) return; done = true; clearTimeout(t);
@@ -910,40 +913,80 @@ const csCall = (method, ...args) => new Promise(res => {
     });
   } catch { done = true; clearTimeout(t); res(null); }
 });
-async function cloudLoad() {
-  if (!cs) return null;
-  const meta = await csCall('getItem', 'meta');
-  if (!meta) return null;
-  let m; try { m = JSON.parse(meta); } catch { return null; }
-  cloudN = m.n || 0;
-  const keys = Array.from({ length: cloudN }, (_, i) => 'c' + i);
+// Сколько «содержимого» в состоянии — чтобы понять, какая копия полнее
+const dataSize = x => !x ? 0 : ['tasks', 'habits', 'fin', 'goals', 'asc', 'wheel'].reduce((n, k) => n + ((x[k] && x[k].length) || 0), 0);
+async function cloudRead(prefix, n) {
+  const keys = Array.from({ length: n }, (_, i) => prefix + i);
   const vals = await csCall('getItems', keys);
-  if (!vals) return null;
-  try { return JSON.parse(keys.map(k => vals[k] || '').join('')); } catch { return null; }
+  if (!vals) return { err: true };
+  try { return { data: JSON.parse(keys.map(k => vals[k] || '').join('')) }; } catch { return { err: true }; }
 }
-async function cloudSave() {
-  if (!cs) return;
-  const json = JSON.stringify(S);
+async function cloudWrite(prefix, json) {
   const n = Math.max(1, Math.ceil(json.length / CHUNK));
-  for (let i = 0; i < n; i++) await csCall('setItem', 'c' + i, json.slice(i * CHUNK, (i + 1) * CHUNK));
-  await csCall('setItem', 'meta', JSON.stringify({ n, updated: S.updated }));
-  if (cloudN > n) await csCall('removeItems', Array.from({ length: cloudN - n }, (_, i) => 'c' + (n + i)));
-  cloudN = n;
+  for (let i = 0; i < n; i++) if (!(await csCall('setItem', prefix + i, json.slice(i * CHUNK, (i + 1) * CHUNK)))) return 0;
+  return n;
+}
+// Возвращает { data } | { empty: true } | { err: true }
+async function cloudLoad() {
+  if (!cs) return { empty: true };
+  const meta = await csCall('getItem', 'meta');
+  if (meta === null) return { err: true };
+  if (!meta) return { empty: true };
+  let m; try { m = JSON.parse(meta); } catch { return { err: true }; }
+  cloudSlot = m.slot || 'c';
+  const r = await cloudRead(cloudSlot, m.n || 0);
+  // текущий слот повреждён — пробуем предыдущий
+  if (r.err && m.prev) { const p = await cloudRead(m.prev.slot, m.prev.n); if (p.data) return p; }
+  return r;
+}
+// Пишем в свободный слот и только потом переключаем meta: оборванная запись не портит прошлую копию
+async function cloudSave() {
+  if (!cs || cloudBlocked) return;
+  if (saving) { saveAgain = true; return; }
+  saving = true;
+  try {
+    const json = JSON.stringify(S);
+    const slot = cloudSlot === 'a' ? 'b' : 'a';
+    const n = await cloudWrite(slot, json);
+    if (!n) { setTimeout(cloudSave, 6000); return; }
+    const prevMeta = await csCall('getItem', 'meta');
+    let prev = null; try { const pm = JSON.parse(prevMeta || 'null'); if (pm) prev = { slot: pm.slot || 'c', n: pm.n }; } catch {}
+    if (await csCall('setItem', 'meta', JSON.stringify({ n, slot, updated: S.updated, prev }))) cloudSlot = slot;
+    else setTimeout(cloudSave, 6000);
+  } finally {
+    saving = false;
+    if (saveAgain) { saveAgain = false; setTimeout(cloudSave, 300); }
+  }
+}
+function adopt(x) {
+  S = Object.assign(blank(), x);
+  S.bank = Object.assign(blank().bank, S.bank || {});
+  S.v = 2;
+  // старые яркие цвета привычек → пастельные
+  S.habits.forEach(h => { const i = OLD_COLORS.indexOf(h.color); if (i >= 0) h.color = COLORS[i]; });
+  if (S.hero && OLD_AVATARS[S.hero.avatar]) S.hero.avatar = OLD_AVATARS[S.hero.avatar];
 }
 async function load() {
   let local = null;
   try { local = JSON.parse(localStorage.getItem(LS_KEY)); } catch {}
-  const cloud = await cloudLoad();
-  const pick = [local, cloud].filter(x => x && x.v).sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
-  if (pick) {
-    const b = blank();
-    S = Object.assign(b, pick);
-    S.bank = Object.assign(blank().bank, S.bank || {});
-    S.v = 2;
-    // старые яркие цвета привычек → пастельные
-    S.habits.forEach(h => { const i = OLD_COLORS.indexOf(h.color); if (i >= 0) h.color = COLORS[i]; });
-    if (S.hero && OLD_AVATARS[S.hero.avatar]) S.hero.avatar = OLD_AVATARS[S.hero.avatar];
-  }
+  let cr = await cloudLoad();
+  if (cr.err) cr = await cloudLoad(); // вторая попытка
+  if (cr.err) cloudBlocked = true;
+  const cloud = cr.data || null;
+  const cands = [local, cloud].filter(x => x && x.v);
+  const pick = cands.slice().sort((x, y) => (y.updated || 0) - (x.updated || 0))[0];
+  if (pick) adopt(pick);
+  // если другая копия заметно полнее выбранной — откладываем её, чтобы предложить восстановить
+  for (const c of cands) if (c !== pick && dataSize(c) > dataSize(pick) + 2) { try { localStorage.setItem(RESCUE_KEY, JSON.stringify(c)); } catch {} }
+  if (cloudBlocked) setTimeout(retryCloud, 4000);
+}
+// Облако не ответило при старте — пробуем ещё, и если там данные полнее, предлагаем их
+async function retryCloud() {
+  const cr = await cloudLoad();
+  if (cr.err) { setTimeout(retryCloud, 8000); return; }
+  cloudBlocked = false;
+  if (cr.data && dataSize(cr.data) > dataSize(S) + 2) { try { localStorage.setItem(RESCUE_KEY, JSON.stringify(cr.data)); } catch {} render(); }
+  else cloudSave();
 }
 function save() {
   S.updated = Date.now();
@@ -951,6 +994,22 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(cloudSave, 700);
 }
+// Резервная копия перед очисткой: на устройстве и в облаке (отдельный слот «z»)
+async function backupNow() {
+  const json = JSON.stringify({ ...S, backupAt: Date.now() });
+  try { localStorage.setItem(BK_KEY, json); } catch {}
+  if (cs) { const n = await cloudWrite('z', json); if (n) await csCall('setItem', 'zmeta', JSON.stringify({ n, at: Date.now() })); }
+}
+async function loadBackup() {
+  let bk = null;
+  try { bk = JSON.parse(localStorage.getItem(BK_KEY)); } catch {}
+  if (cs) {
+    const zm = await csCall('getItem', 'zmeta');
+    try { const m = JSON.parse(zm || 'null'); if (m && (!bk || m.at > (bk.backupAt || 0))) { const r = await cloudRead('z', m.n); if (r.data) bk = r.data; } } catch {}
+  }
+  return bk && dataSize(bk) ? bk : null;
+}
+function getRescue() { try { const r = JSON.parse(localStorage.getItem(RESCUE_KEY)); return r && dataSize(r) > dataSize(S) ? r : null; } catch { return null; } }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && saveTimer) { clearTimeout(saveTimer); saveTimer = null; cloudSave(); }
 });
@@ -1368,7 +1427,9 @@ function viewCamp(g) {
       <li>Выполняй <b>задания дня</b> и забирай награду</li>
       <li>Монетки трать на <b>награды для себя</b> — свои, настоящие</li></ul></div>` : '';
   const demoCard = looksLikeDemo() ? `<div class="card tip demo-note"><b>🧹 Демо-режим выключен</b><div class="meta" style="margin:4px 0 10px">Похоже, сейчас здесь примерные данные из демо: задачи, привычки, траты. Очистить их и начать свой планер с нуля? Имя и аватар останутся.</div><button type="button" class="btn" style="margin-top:0" data-act="clearDemo">Очистить демо-данные</button><button type="button" class="btn alt" data-act="keepData">Нет, это мои данные</button></div>` : '';
-  return `${heroCard(g)}${demoCard}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
+  const rescue = getRescue();
+  const rescueCard = rescue ? `<div class="card tip demo-note"><b>💾 Нашлась более полная копия данных</b><div class="meta" style="margin:4px 0 10px">В ней ${(rescue.tasks || []).length} задач, ${(rescue.habits || []).length} привычек, ${(rescue.fin || []).length} операций${rescue.updated ? ', сохранена ' + new Date(rescue.updated).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : ''}. Вернуть её?</div><button type="button" class="btn" style="margin-top:0" data-act="restoreRescue">Восстановить</button><button type="button" class="btn alt" data-act="dropRescue">Не нужно</button></div>` : '';
+  return `${heroCard(g)}${rescueCard}${demoCard}${tip}${canAddHome() && !S.homeDismissed ? homeCard(true) : ''}${bossCard(g.boss)}
   <div class="sec"><span class="tape">Задания дня</span> <span class="r">${qDone}/${qs.length} · обновятся в 00:00</span></div>
   ${questList(qs)}
   ${c.hT.length ? `<div class="sec"><span class="tape">Привычки на сегодня</span> <span class="r">${c.hDone}/${c.hT.length}</span></div>
@@ -1530,6 +1591,7 @@ function viewProfile(g) {
   const got = Object.keys(S.ach).length;
   return `${heroCard(g, { big: true })}
   <div class="theme-row"><span class="meta">Тема</span><div class="seg">${[['light', '☀️ Светлая'], ['dark', '🌙 Тёмная'], ['auto', '📱 Авто']].map(([k, l]) => `<button type="button" class="${(S.theme || 'auto') === k ? 'on' : ''}" data-act="setTheme" data-v="${k}">${l}</button>`).join('')}</div></div>
+  ${ui.backup ? `<div class="card tip demo-note"><b>↩️ Есть копия до очистки</b><div class="meta" style="margin:4px 0 10px">${(ui.backup.tasks || []).length} задач, ${(ui.backup.habits || []).length} привычек, ${(ui.backup.fin || []).length} операций${ui.backup.backupAt ? ' · ' + new Date(ui.backup.backupAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : ''}</div><button type="button" class="btn" style="margin-top:0" data-act="restoreBackup">Вернуть эти данные</button></div>` : ''}
   <div class="reset-row"><span class="meta">Хочешь начать заново?</span><button type="button" class="chip" data-act="resetAll">🧹 Очистить всё</button></div>
   <div class="kpis">
     <div class="kpi"><b>${a.xp}</b><span>опыта всего</span></div>
@@ -1572,6 +1634,7 @@ const looksLikeDemo = () => {
 };
 // Сброс всего прогресса: остаются только имя и аватар героя
 function resetAll() {
+  backupNow();
   const hero = S.hero, theme = S.theme;
   S = blank();
   S.hero = { ...hero, since: today() };
@@ -2555,6 +2618,18 @@ const A = {
     t.done ? haptic.ok() : haptic.tap();
     refreshSheets();
   },
+  async restoreRescue() {
+    const r = getRescue(); if (!r) return;
+    if (!(await ask('Вернуть более полную копию данных? Текущие данные будут заменены.'))) return;
+    await backupNow(); adopt(r); try { localStorage.removeItem(RESCUE_KEY); } catch {}
+    cloudBlocked = false; save(); render(); haptic.ok(); confetti(60); toast('💾', 'Данные восстановлены', 'Всё на месте');
+  },
+  dropRescue() { try { localStorage.removeItem(RESCUE_KEY); } catch {} render(); },
+  async restoreBackup() {
+    const bk = ui.backup || await loadBackup(); if (!bk) return;
+    if (!(await ask('Вернуть данные из копии до очистки? Текущие данные будут заменены.'))) return;
+    adopt(bk); ui.backup = null; cloudBlocked = false; save(); render(); haptic.ok(); confetti(60); toast('↩️', 'Данные возвращены', 'Всё как было до очистки');
+  },
   setTheme(d) { S.theme = d.v; applyTheme(); save(); render(); haptic.sel(); },
   heroMode(d) { ui.heroMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
   goalMode(d) { ui.goalMode = d.v; haptic.sel(); render(); window.scrollTo(0, 0); },
@@ -2958,6 +3033,7 @@ async function boot() {
   checkUpdate();
   await load();
   applyTheme();
+  loadBackup().then(bk => { if (bk && dataSize(bk) > dataSize(S)) { ui.backup = bk; if (ui.tab === 'hero') render(); } });
   if (S.hero) {
     settleOldBosses();
     const got = checkAch();
